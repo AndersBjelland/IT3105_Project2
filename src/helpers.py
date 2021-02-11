@@ -18,18 +18,5 @@ def rotate_coordinate(coordinate, angle):
     return transformed
 
 
-def get_middle_location(from_location: Tuple[int,int], to_location: Tuple[int,int]) -> Tuple[int,int]:
-    dx = (to_location[0] - from_location[0])/2
-    dy = (to_location[1] - from_location[1])/2
-    return (from_location[0] + dx, from_location[1] + dy)
-
-
-def plot_remaining_pieces(remaining_pieces: List[int]):
-    plt.figure()
-    plt.xlabel('Episodes')
-    plt.ylabel('Remaining pieces on board')
-    plt.plot([i for i in range(len(remaining_pieces))], remaining_pieces)
-
-
 
 

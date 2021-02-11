@@ -30,10 +30,10 @@ class Cell:
     def get_neighbours(self) -> List["Cell"]:
         return self.neighbours
     
-    def set_piece(self, piece: "Piece"):
+    def set_piece(self, piece: int):
         self.piece = piece
 
-    def get_piece(self) -> "Piece":
+    def get_piece(self) -> int:
         return self.piece
 
 class HexagonalGrid(metaclass=abc.ABCMeta):
