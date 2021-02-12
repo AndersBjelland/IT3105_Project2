@@ -1,9 +1,11 @@
 
 class Node():
-    def __init__(self, data=None, parent=None):
-        self.data = data
+    def __init__(self, state=None, parent=None):
+        self.state = state
         self.set_parent(parent)
         self.children = []
+        self.q_values = []
+        self.traverse_count = 0
 
     def get_parent(self):
         return self.parent
