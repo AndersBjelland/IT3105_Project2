@@ -1,7 +1,7 @@
 
 class Node():
-    def __init__(self, state=None, parent=None):
-        self.state = state
+    def __init__(self, environment=None, parent=None):
+        self.environment = environment
         self.set_parent(parent)
         self.children = []
         self.q_values = []
