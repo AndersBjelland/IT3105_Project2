@@ -57,10 +57,6 @@ class Hex:
         cell.set_piece(self.current)
         self.current = BLACK if self.current == RED else RED
     
-    def _get_cell(self, coordinate: Tuple) -> Cell:
-        for cell in self.get_board().get_cells():
-            if cell.get_row() == coordinate[0] and cell.get_column() == coordinate[1]:
-                return cell
 
     def _get_NW_coordinates(self) -> Set[Tuple[int,int]]:
         coordinates = []
@@ -119,7 +115,8 @@ class Hex:
         
         return leaf_cells
 
-    def is_victory(self) -> bool:
+
+    def check_victory(self) -> Tuple[bool, int]:
         NW, SE = self._get_NW_coordinates(), self._get_SE_coordinates()
         NE, SW = self._get_NE_coordinates(), self._get_SW_coordinates()
         side_pairs = [(NW, SE), (NE, SW)]
@@ -127,11 +124,10 @@ class Hex:
         for side_pair in side_pairs:
             for coordinate in side_pair[0]:
                 leaf_coordinates = set(self._search_from(coordinate))
-                print(leaf_coordinates)
                 if len(leaf_coordinates & side_pair[1]) > 0:
-                    return True
+                    return (True, BLACK if side_pair[0] == NW else RED)
         
-        return False
+        return (False, None)
 
 
     def get_state(self):
@@ -140,6 +136,9 @@ class Hex:
             state.append(cell.get_piece())
         return state
 
+
+
+    ######### Visualization methods ##############
 
     def get_node_colors(self, G: "Graph") -> "ColorMap":
         c_map = []
@@ -167,7 +166,6 @@ class Hex:
             visited.append(cell)
         return G
 
-
     def display_board(self, edge_color=None, pace = 0.3):
         angle = 5*np.pi/4
         G = self.get_networkx_graph()
@@ -178,20 +176,6 @@ class Hex:
         # Display the board
         nx.draw(G, with_labels=True, node_size=1000, pos=pos, node_color=c_map, edge_color=edge_color)
         plt.pause(pace)
-
-
-hex = Hex((3,3))
-hex.place_piece((1,0))
-hex.place_piece((2,2))
-hex.place_piece((1,1))
-hex.place_piece((0,1))
-#hex.place_piece((1,2))
-print(hex._search_from((1,0)))
-print(hex.is_victory())
-hex.display_board()
-plt.show()
-
-
             
 
 
