@@ -17,7 +17,7 @@ We rotate the board such that
 cell [0,0] is the top 
 cell [n,n] is the bottom
 cell [n,0] is the left (west)
-ceøø [0,n] is the right (east)
+cell [0,n] is the right (east)
 """
 
 
