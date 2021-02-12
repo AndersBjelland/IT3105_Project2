@@ -50,7 +50,7 @@ class Hex:
     def get_size(self) -> Tuple[int, int]:
         return self.size
 
-    def place_piece(self, coordinate: Tuple):
+    def make_action(self, coordinate: Tuple):
         cell = self.get_board().get_cell(coordinate[0], coordinate[1])
         if cell.get_piece() != EMPTY:
             return 
