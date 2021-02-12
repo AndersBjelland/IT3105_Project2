@@ -136,6 +136,10 @@ class Hex:
             state.append(cell.get_piece())
         return state
 
+    def one_hot_encode(self, state: List[int]) -> List[str]:
+        encoded = [np.binary_repr(state,2)]
+        return encoded
+        
 
 
     ######### Visualization methods ##############
