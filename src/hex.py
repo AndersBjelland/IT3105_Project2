@@ -130,11 +130,18 @@ class Hex:
         return (False, None)
 
 
-    def get_state(self):
-        state = []
-        for cell in self.get_board().get_cells():
-            state.append(cell.get_piece())
-        return state
+    def available_actions(self) -> List[Tuple[int,int]]:
+        return [(cell.get_row(), cell.get_column()) for cell in self.get_board().get_cells() if cell.get_piece() == 0]
+
+    def get_state(self) -> List[int]:
+        """
+        A cell is represented as 0 - EMPTY, 1 - BLACK, 2 - RED.
+        We also include the current player in the first element of the state.
+        """
+        state = [cell for cell in self.get_board().get_cells()]
+        player = [self.current]
+        
+        return player + state
 
     def one_hot_encode(self, state: List[int]) -> List[str]:
         encoded = [np.binary_repr(state,2)]
