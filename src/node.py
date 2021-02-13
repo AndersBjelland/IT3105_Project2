@@ -8,9 +8,14 @@ class Node():
         self.set_parent(parent)
         self.children = []
         self.q_values = {} # {action:q_value}
-        self.traverse_count = 0 # Number of the edge from parent to this node has been traversed
+        
+        # Number of times the edge from parent to this node has been traversed, 
+        # for the root this can be interpreted as number of times traversed into the tree
+        self.traverse_count = 0
+
         self.action = action
         self.state_value = 0
+        self.visited = 0
 
     def get_parent(self):
         return self.parent
