@@ -167,8 +167,24 @@ class Hex:
             elif piece == RED:
                 c_map.append('red')
             elif piece == BLACK:
+                c_map.append('blue')
+        return c_map
+
+    def get_edge_colors(self, G: "Graph") -> "ColorMap":
+        c_map = []
+        NW, SE = self._get_NW_coordinates(), self._get_SE_coordinates()
+        NE, SW = self._get_NE_coordinates(), self._get_SW_coordinates()
+        for u, v in G.edges():
+            if u in NW and v in NW or u in SE and v in SE:
+                c_map.append('blue')
+                G[u][v]['weight'] = 2
+            elif u in NE and v in NE or u in SW and v in SW:
+                c_map.append('red')
+                G[u][v]['weight'] = 2
+            else:
                 c_map.append('black')
         return c_map
+
 
     def get_networkx_graph(self) -> "Graph":
         cells = self.get_board().get_cells()
@@ -184,20 +200,25 @@ class Hex:
             visited.append(cell)
         return G
 
-    def display_board(self, edge_color=None, pace = 0.3):
+    def display_board(self, pace = 0.3):
         angle = 5*np.pi/4
         G = self.get_networkx_graph()
         # Rotate the position of the nodes
         pos = rotate(G, angle)
         # create color map according to whether the cells are empty or not
         c_map = self.get_node_colors(G)
+        edge_color = self.get_edge_colors(G)
+        edge_weights = [G[u][v]['weight'] for u,v in G.edges()]
         # Display the board
-        nx.draw(G, with_labels=True, node_size=1000, pos=pos, node_color=c_map, edge_color=edge_color)
+        nx.draw(G, with_labels=True, node_size=1000, pos=pos, node_color=c_map, edge_color=edge_color, width=edge_weights)
         plt.pause(pace)
 
-"""
+
 hex = Hex((5,5))
 hex.make_action((0,0))
+hex.display_board()
+plt.show()
+"""
 copy = hex.copy()
 copy.make_action((1,1))
 
