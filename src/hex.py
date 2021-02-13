@@ -44,6 +44,14 @@ class Hex:
         for cell in self.get_board().get_cells():
             cell.set_piece(EMPTY)
 
+    def copy(self) -> 'Hex':
+        hex = Hex(self.size, self.current)
+        for cell in self.get_board().get_cells():
+            equivalent_cell = hex.get_board().get_cell(cell.get_row(), cell.get_column())
+            equivalent_cell.set_piece(cell.get_piece())
+        return hex
+
+
     def get_board(self) -> "HexagonalGrid":
         return self.board 
 
@@ -187,7 +195,17 @@ class Hex:
         # Display the board
         nx.draw(G, with_labels=True, node_size=1000, pos=pos, node_color=c_map, edge_color=edge_color)
         plt.pause(pace)
-            
+
+
+hex = Hex((5,5))
+hex.make_action((0,0))
+copy = hex.copy()
+copy.make_action((1,1))
+
+hex.display_board()
+copy.display_board()
+hex.display_board()
+plt.show()
 
 
 
