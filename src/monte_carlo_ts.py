@@ -120,17 +120,17 @@ class MTCS():
             self.perform_simulation()
         return (max(self.root.get_children(), key=lambda x : x.traverse_count)).action
 
-
+"""
 class test_target_policy:
 
     def get_action(self, env):
         return random.choice(env.available_actions())
-
-
+"""
+"""
 hex = Hex((3,3))
 monte = MTCS(test_target_policy(), hex)
 print(monte.search(1000))
-
+"""
     
         
 
