@@ -31,7 +31,7 @@ class Hex:
         """
         if start_player not in [1, 2]:
             raise Exception("start_player must be {} or {}, not {}".format(BLACK, RED, start_player))
-        self.current = start_player
+        self.current_player = start_player
 
         self.size = size
         self.board = Diamond(size)
@@ -45,7 +45,7 @@ class Hex:
             cell.set_piece(EMPTY)
 
     def copy(self) -> 'Hex':
-        hex = Hex(self.size, self.current)
+        hex = Hex(self.size, self.current_player)
         for cell in self.get_board().get_cells():
             equivalent_cell = hex.get_board().get_cell(cell.get_row(), cell.get_column())
             equivalent_cell.set_piece(cell.get_piece())
@@ -62,8 +62,8 @@ class Hex:
         cell = self.get_board().get_cell(coordinate[0], coordinate[1])
         if cell.get_piece() != EMPTY:
             return 
-        cell.set_piece(self.current)
-        self.current = BLACK if self.current == RED else RED
+        cell.set_piece(self.current_player)
+        self.current_player = BLACK if self.current_player == RED else RED
     
 
     def _get_NW_coordinates(self) -> Set[Tuple[int,int]]:
@@ -146,7 +146,7 @@ class Hex:
         We also include the current player in the first element of the state.
         """
         state = [cell for cell in self.get_board().get_cells()]
-        player = [self.current]
+        player = [self.current_player]
         
         return player + state
 
@@ -195,7 +195,7 @@ class Hex:
         nx.draw(G, with_labels=True, node_size=1000, pos=pos, node_color=c_map, edge_color=edge_color)
         plt.pause(pace)
 
-
+"""
 hex = Hex((5,5))
 hex.make_action((0,0))
 copy = hex.copy()
@@ -206,7 +206,7 @@ copy.display_board()
 hex.display_board()
 plt.show()
 
-
+"""
 
 
 
