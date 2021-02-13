@@ -124,7 +124,7 @@ class Hex:
         return leaf_cells
 
 
-    def check_victory(self) -> Tuple[bool, int]:
+    def get_winner(self) -> int:
         NW, SE = self._get_NW_coordinates(), self._get_SE_coordinates()
         NE, SW = self._get_NE_coordinates(), self._get_SW_coordinates()
         side_pairs = [(NW, SE), (NE, SW)]
@@ -133,10 +133,9 @@ class Hex:
             for coordinate in side_pair[0]:
                 leaf_coordinates = set(self._search_from(coordinate))
                 if len(leaf_coordinates & side_pair[1]) > 0:
-                    return (True, BLACK if side_pair[0] == NW else RED)
+                    return BLACK if side_pair[0] == NW else RED
         
-        return (False, None)
-
+        return 0
 
     def available_actions(self) -> List[Tuple[int,int]]:
         return [(cell.get_row(), cell.get_column()) for cell in self.get_board().get_cells() if cell.get_piece() == 0]
