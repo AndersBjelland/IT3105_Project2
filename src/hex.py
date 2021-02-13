@@ -213,12 +213,10 @@ class Hex:
         nx.draw(G, with_labels=True, node_size=1000, pos=pos, node_color=c_map, edge_color=edge_color, width=edge_weights)
         plt.pause(pace)
 
-
+"""
 hex = Hex((5,5))
 hex.make_action((0,0))
 hex.display_board()
-plt.show()
-"""
 copy = hex.copy()
 copy.make_action((1,1))
 
