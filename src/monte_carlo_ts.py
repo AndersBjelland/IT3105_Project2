@@ -97,10 +97,10 @@ class MTCS():
         q_and_u_values = {action : (node.q_values[action], self.exploration_bonus(node, action)) for action in available_actions}
         if node.environment.current() == self.root.environment.current():
             # return argmax q+u
-            return max(q_and_u_values.keys(), key=lambda x : sum(q_and_u_values[x]))
+            return node.get_child(max(q_and_u_values.keys(), key=lambda x : sum(q_and_u_values[x])))
 
         # return argmin q-u
-        return min(q_and_u_values.keys(), key=lambda x : q_and_u_values[0] - q_and_u_values[1])
+        return node.get_child(min(q_and_u_values.keys(), key=lambda x : q_and_u_values[0] - q_and_u_values[1]))
         
 
 
