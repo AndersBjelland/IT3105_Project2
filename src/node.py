@@ -6,6 +6,7 @@ class Node():
         self.children = []
         self.q_values = []
         self.traverse_count = 0
+        self.actions = []
 
     def get_parent(self):
         return self.parent
@@ -20,5 +21,8 @@ class Node():
 
     def add_child(self, child):
         self.children.append(child)
+
+    def add_action(self, action):
+        self.actions.append(action)
     
         
