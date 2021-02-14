@@ -140,6 +140,12 @@ class Hex:
     def available_actions(self) -> List[Tuple[int,int]]:
         return [(cell.get_row(), cell.get_column()) for cell in self.get_board().get_cells() if cell.get_piece() == 0]
 
+    def available_actions_binary(self) -> List[int]:
+        """
+        Returns a list with 0 or 1 indicating if an action is legal or not, combined with the corresponding action
+        """
+        return [(1, (cell.get_row(), cell.get_column())) if cell.get_piece() == 0 else (0, (cell.get_row(), cell.get_column())) for cell in self.get_board().get_cells()]
+
     def get_state(self) -> List[int]:
         """
         A cell is represented as 0 - EMPTY, 1 - BLACK, 2 - RED.
@@ -213,9 +219,11 @@ class Hex:
         nx.draw(G, with_labels=True, node_size=1000, pos=pos, node_color=c_map, edge_color=edge_color, width=edge_weights)
         plt.pause(pace)
 
-"""
+
 hex = Hex((5,5))
 hex.make_action((0,0))
+print(hex.available_actions_binary())
+"""
 hex.display_board()
 copy = hex.copy()
 copy.make_action((1,1))
