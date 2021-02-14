@@ -9,8 +9,8 @@ from typing import Tuple, List, Set
 
 """
 Class representing the game of HEX.
-There are two players, BLACK and RED.
-BLACK owns the northwest and southeast side.
+There are two players, BLUE and RED.
+BLUE owns the northwest and southeast side.
 RED owns the northeast and southwest side.
 
 We rotate the board such that 
@@ -21,16 +21,16 @@ cell [0,n] is the right (east)
 """
 
 
-EMPTY, BLACK, RED = 0, 1, 2
+EMPTY, BLUE, RED = 0, 1, 2
 
 class Hex:
-    def __init__(self, size: Tuple[int, int], start_player=BLACK):
+    def __init__(self, size: Tuple[int, int], start_player=BLUE):
         """
         size: size of grid (n,n)
         empty_cells: [(row, column)...]
         """
         if start_player not in [1, 2]:
-            raise Exception("start_player must be {} or {}, not {}".format(BLACK, RED, start_player))
+            raise Exception("start_player must be {} or {}, not {}".format(BLUE, RED, start_player))
         self.current_player = start_player
 
         self.size = size
@@ -63,7 +63,7 @@ class Hex:
         if cell.get_piece() != EMPTY:
             return 
         cell.set_piece(self.current_player)
-        self.current_player = BLACK if self.current_player == RED else RED
+        self.current_player = BLUE if self.current_player == RED else RED
     
 
     def _get_NW_coordinates(self) -> Set[Tuple[int,int]]:
@@ -100,7 +100,7 @@ class Hex:
         leaf_cells = []
         current_cell = self.get_board().get_cell(coordinate[0], coordinate[1])
         
-        player = BLACK if current_cell.get_piece() == BLACK else RED
+        player = BLUE if current_cell.get_piece() == BLUE else RED
 
         to_visit.append(current_cell)
 
@@ -133,7 +133,7 @@ class Hex:
             for coordinate in side_pair[0]:
                 leaf_coordinates = set(self._search_from(coordinate))
                 if len(leaf_coordinates & side_pair[1]) > 0:
-                    return BLACK if side_pair[0] == NW else RED
+                    return BLUE if side_pair[0] == NW else RED
         
         return 0
 
@@ -148,10 +148,10 @@ class Hex:
 
     def get_state(self) -> List[int]:
         """
-        A cell is represented as 0 - EMPTY, 1 - BLACK, 2 - RED.
+        A cell is represented as 0 - EMPTY, 1 - BLUE, 2 - RED.
         We also include the current player in the first element of the state.
         """
-        state = [cell for cell in self.get_board().get_cells()]
+        state = [cell.piece for cell in self.get_board().get_cells()]
         player = [self.current_player]
         
         return player + state
@@ -172,7 +172,7 @@ class Hex:
                 c_map.append('gray')
             elif piece == RED:
                 c_map.append('red')
-            elif piece == BLACK:
+            elif piece == BLUE:
                 c_map.append('blue')
         return c_map
 
@@ -219,11 +219,11 @@ class Hex:
         nx.draw(G, with_labels=True, node_size=1000, pos=pos, node_color=c_map, edge_color=edge_color, width=edge_weights)
         plt.pause(pace)
 
-
+"""
 hex = Hex((5,5))
 hex.make_action((0,0))
 print(hex.available_actions_binary())
-"""
+
 hex.display_board()
 copy = hex.copy()
 copy.make_action((1,1))
