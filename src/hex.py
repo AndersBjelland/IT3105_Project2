@@ -1,5 +1,5 @@
-from hexagonal_grid import Diamond, Cell
-from helpers import rotate
+from .hexagonal_grid import Diamond, Cell
+from .helpers import rotate
 
 import numpy as np
 import networkx as nx

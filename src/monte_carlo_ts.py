@@ -1,5 +1,5 @@
-from hex import Hex
-from node import Node
+from .hex import Hex
+from .node import Node
 
 from typing import Callable, List, Tuple
 import numpy as np
