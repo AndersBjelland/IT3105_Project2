@@ -30,8 +30,9 @@ class Hex:
         empty_cells: [(row, column)...]
         """
         if start_player not in [1, 2]:
-            raise Exception("start_player must be {} or {}, not {}".format(BLUE, RED, start_player))
+            raise ValueError("start_player must be {} or {}, not {}".format(BLUE, RED, start_player))
         self.current_player = start_player
+        self.start_player = start_player
 
         self.size = size
         self.board = Diamond(size)
@@ -159,6 +160,16 @@ class Hex:
     def one_hot_encode(self, state: List[int]) -> List[str]:
         encoded = [np.binary_repr(state,2)]
         return encoded
+
+    def set_piece(self, coordinate: Tuple[int, int], owner: int):
+        """
+        Place a stone on the board without changing current player.
+        This method is only used when modifying the board outside a game.
+        It also overwrites if there is a stone in a cell already
+        """
+        cell = self.get_board().get_cell(coordinate[0], coordinate[1])
+        cell.set_piece(owner)
+        
         
 
 
