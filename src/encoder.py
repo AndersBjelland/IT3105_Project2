@@ -48,12 +48,14 @@ class HexEncoder(Encoder):
         for i in range(len(planes)):
             planes[i] = np.expand_dims(planes[i], axis=2)
 
-        feat = np.concatenate(planes, axis=2)
+        feat = np.concatenate(planes, axis=2).astype(float)
         feat = np.expand_dims(feat, axis=0)
         # Return as tensor
         return tf.convert_to_tensor(feat)
 
     def create_padded_env(self, padding:int) -> 'env':
+        if padding < 1:
+            return self.env
         current_env_size = self.env.size
         new_size = (current_env_size[0] + padding+1, current_env_size[1] + padding+1)
         coordinate_scaler = lambda x: (x[0] + padding, x[1] + padding) # coresponding coordinate in new env
