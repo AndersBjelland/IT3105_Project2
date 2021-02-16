@@ -46,11 +46,11 @@ class Hex:
             cell.set_piece(EMPTY)
 
     def copy(self) -> 'Hex':
-        hex = Hex(self.size, self.current_player)
+        new_hex = Hex(self.size, self.current_player)
         for cell in self.get_board().get_cells():
-            equivalent_cell = hex.get_board().get_cell(cell.get_row(), cell.get_column())
+            equivalent_cell = new_hex.get_board().get_cell(cell.get_row(), cell.get_column())
             equivalent_cell.set_piece(cell.get_piece())
-        return hex
+        return new_hex
 
 
     def get_board(self) -> "HexagonalGrid":
@@ -96,7 +96,7 @@ class Hex:
         return tuple(coordinates)
 
 
-    def _search_from(self, coordinate: Tuple[int,int]) -> bool:
+    def _search_from(self, coordinate: Tuple[int,int]) -> List[Cell]:
         """
         Performs a DFS search and return all leaf cells.
         """
@@ -233,37 +233,3 @@ class Hex:
         # Display the board
         nx.draw(G, with_labels=True, node_size=1000, pos=pos, node_color=c_map, edge_color=edge_color, width=edge_weights)
         plt.pause(pace)
-
-"""
-hex = Hex((5,5))
-hex.make_action((0,0))
-print(hex.available_actions_binary())
-
-hex.display_board()
-copy = hex.copy()
-copy.make_action((1,1))
-
-hex.display_board()
-copy.display_board()
-hex.display_board()
-plt.show()
-
-"""
-
-
-
-
-            
-
-
-
-
-
-        
-
-    
-
-
-
-
-    
