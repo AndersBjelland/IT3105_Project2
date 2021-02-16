@@ -67,29 +67,33 @@ class Hex:
         self.current_player = BLUE if self.current_player == RED else RED
     
 
-    def _get_NW_coordinates(self) -> Set[Tuple[int,int]]:
+    def get_NW_coordinates(self, layer=0) -> Tuple[Tuple[int,int]]:
         coordinates = []
-        for row in range(self.size[0]):
-            coordinates.append((row, 0))
-        return set(coordinates)
+        for row in range(self.size[0]-2*layer):
+            row += layer
+            coordinates.append((row, layer))
+        return tuple(coordinates)
 
-    def _get_NE_coordinates(self) -> Set[Tuple[int,int]]:
+    def get_NE_coordinates(self, layer=0) -> Tuple[Tuple[int,int]]:
         coordinates = []
-        for column in range(self.size[1]):
-            coordinates.append((0, column))
-        return set(coordinates)
+        for column in range(self.size[1] - 2*layer):
+            column += layer
+            coordinates.append((layer, column))
+        return tuple(coordinates)
     
-    def _get_SW_coordinates(self) -> Set[Tuple[int,int]]:
+    def get_SW_coordinates(self, layer=0) -> Tuple[Tuple[int,int]]:
         coordinates = []
-        for column in range(self.size[1]):
-            coordinates.append((self.size[0]-1, column))
-        return set(coordinates)
+        for column in range(self.size[1] - 2*layer):
+            column += layer
+            coordinates.append(((self.size[0]-1)-layer, column))
+        return tuple(coordinates)
 
-    def _get_SE_coordinates(self) -> Set[Tuple[int,int]]:
+    def get_SE_coordinates(self, layer=0) -> Tuple[Tuple[int,int]]:
         coordinates = []
-        for row in range(self.size[0]):
-            coordinates.append((row, self.size[1]-1))
-        return set(coordinates)
+        for row in range(self.size[0] - 2*layer):
+            row += layer
+            coordinates.append((row, (self.size[1]-1) - layer))
+        return tuple(coordinates)
 
 
     def _search_from(self, coordinate: Tuple[int,int]) -> bool:
@@ -126,8 +130,8 @@ class Hex:
 
 
     def get_winner(self) -> int:
-        NW, SE = self._get_NW_coordinates(), self._get_SE_coordinates()
-        NE, SW = self._get_NE_coordinates(), self._get_SW_coordinates()
+        NW, SE = self.get_NW_coordinates(), self.get_SE_coordinates()
+        NE, SW = self.get_NE_coordinates(), self.get_SW_coordinates()
         side_pairs = [(NW, SE), (NE, SW)]
 
         for side_pair in side_pairs:
@@ -189,8 +193,8 @@ class Hex:
 
     def get_edge_colors(self, G: "Graph") -> "ColorMap":
         c_map = []
-        NW, SE = self._get_NW_coordinates(), self._get_SE_coordinates()
-        NE, SW = self._get_NE_coordinates(), self._get_SW_coordinates()
+        NW, SE = self.get_NW_coordinates(), self.get_SE_coordinates()
+        NE, SW = self.get_NE_coordinates(), self.get_SW_coordinates()
         for u, v in G.edges():
             if u in NW and v in NW or u in SE and v in SE:
                 c_map.append('blue')
