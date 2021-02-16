@@ -25,7 +25,6 @@ class MTCS():
 
     def _traverse_to_leaf(self) -> Node:
         current = self.root
-        #path = []
         while not self._is_leaf_node(current):
             #path.append(current)
             # Use the policy to get the next node and set it to current
@@ -49,7 +48,6 @@ class MTCS():
     def _rollout(self, node: Node) -> int:
         env = node.environment.copy()
         while not env.get_winner():
-           # action = self.target_policy.get_action(env.get_state())
             action = self.target_policy.get_action(env)
             env.make_action(action)
         
@@ -119,18 +117,6 @@ class MTCS():
         for _ in range(n_simulations):
             self.perform_simulation()
         return (max(self.root.get_children(), key=lambda x : x.traverse_count)).action
-
-"""
-class test_target_policy:
-
-    def get_action(self, env):
-        return random.choice(env.available_actions())
-"""
-"""
-hex = Hex((3,3))
-monte = MTCS(test_target_policy(), hex)
-print(monte.search(1000))
-"""
     
         
 
