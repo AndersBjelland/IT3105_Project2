@@ -16,8 +16,8 @@ class Agent:
 
         while env.get_winner() == 0:
             distribution = self.mcts.search(n_simulations=100)
+            
             # Choose action with probability proportional to the traverse count
-
             action = list(distribution.keys())[np.random.choice([_ for _ in range(len(distribution.keys()))], p=list(distribution.values()))]
             replay_buffer.append((env, distribution))
             
