@@ -96,18 +96,16 @@ class Hex:
         return tuple(coordinates)
 
 
-    def _search_from(self, coordinate: Tuple[int,int]) -> List[Cell]:
+    def _search_from(self, coordinate: Tuple[int,int], player: int) -> List[Tuple[int, int]]:
         """
-        Performs a DFS search and return all leaf cells.
+        Performs a DFS search with respect to the player and return all leaf cells.
         """
         visited = []
         to_visit = []
-        leaf_cells = []
         current_cell = self.get_board().get_cell(coordinate[0], coordinate[1])
-        
-        player = BLUE if current_cell.get_piece() == BLUE else RED
 
-        to_visit.append(current_cell)
+        if current_cell.get_piece() == player:
+            to_visit.append(current_cell)
 
         while len(to_visit) != 0:
             # Add current cell to the visited list
@@ -116,17 +114,13 @@ class Hex:
             # Get the neighbours that are owned by the player and are not already visited
             neighbour_cells = [cell  for cell in current_cell.get_neighbours() if cell.get_piece() == player and cell not in visited]
 
-            # Check if current cell is leaf cell
-            if len(neighbour_cells) == 0:
-                leaf_cells.append((current_cell.get_row(), current_cell.get_column()))
-
             # Add neighbours to the to_visit list 
             to_visit += neighbour_cells
 
             # Set current cell to the next we will update and remove that for to_visit
             current_cell = to_visit.pop()
         
-        return leaf_cells
+        return [(cell.get_row(), cell.get_column()) for cell in visited]
 
 
     def get_winner(self) -> int:
@@ -134,10 +128,12 @@ class Hex:
         NE, SW = self.get_NE_coordinates(), self.get_SW_coordinates()
         side_pairs = [(NW, SE), (NE, SW)]
 
-        for side_pair in side_pairs:
+        for i in range(len(side_pairs)):
+            player = i+1
+            side_pair = side_pairs[i]
             for coordinate in side_pair[0]:
-                leaf_coordinates = set(self._search_from(coordinate))
-                if len(leaf_coordinates & side_pair[1]) > 0:
+                path = set(self._search_from(coordinate, player=player))
+                if len(path & set(side_pair[1])) > 0:
                     return BLUE if side_pair[0] == NW else RED
         
         return 0
