@@ -12,7 +12,7 @@ for managing rollouts.
 We will in this project use the actor network as the target policy.
 """
 
-class MTCS():
+class MCTS():
 
     def __init__(self, target_policy, environment: Hex, exploration_bonus='uct', c=1):
         if exploration_bonus=='uct':
@@ -20,7 +20,7 @@ class MTCS():
         else:
             raise ValueError("exploration_bonus must be one of 'utc' (got {})".format(exploration_bonus))
         self.target_policy = target_policy
-        self.environment = environment
+        self.environment = environment.copy()
         self.root = Node(environment=environment)
 
     def _traverse_to_leaf(self) -> Node:
@@ -48,8 +48,10 @@ class MTCS():
     def _rollout(self, node: Node) -> int:
         env = node.environment.copy()
         while not env.get_winner():
+            print(env.get_winner())
             action = self.target_policy.get_action(env)
             env.make_action(action)
+            env.display_board()
         
         winner = env.get_winner()
         return 1 if self.root.environment.current_player == winner else -1
@@ -105,6 +107,9 @@ class MTCS():
         # return argmin q-u
         return node.get_child(min(q_and_u_values.keys(), key=lambda x : q_and_u_values[x][0] - q_and_u_values[x][1]))
 
+    def set_new_root(self, action):
+        child = self.root.get_child(action)
+        self.root = child
 
     def perform_simulation(self):
 
@@ -115,8 +120,12 @@ class MTCS():
 
     def search(self, n_simulations: int) -> Tuple[int, int]:
         for _ in range(n_simulations):
+            print('_')
             self.perform_simulation()
-        return (max(self.root.get_children(), key=lambda x : x.traverse_count)).action
+        distribution = {child.action : child.traverse_count for child in self.root.get_children()}
+        factor = 1/sum(distribution.values())
+        distribution = {action : v*factor for action, v in distribution.items()}
+        return distribution
     
         
 
