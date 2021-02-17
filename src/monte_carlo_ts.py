@@ -79,8 +79,8 @@ class MCTS():
         """
         available_actions = node.environment.available_actions()
 
-        # If the number of children equals the number of available actions we can conclude that it is not a leaf node
-        if len(available_actions) == len(node.get_children()):
+        # If there are available actions and the number of children equals the number of available actions we can conclude that it is not a leaf node
+        if len(available_actions) > 0 and len(available_actions) == len(node.get_children()):
             return False
 
         return True
@@ -98,6 +98,7 @@ class MCTS():
         """
         available_actions = node.environment.available_actions()
         q_and_u_values = {action : (node.q_values[action], self.exploration_bonus(node, action)) for action in available_actions}
+        
         if node.environment.current_player == self.root.environment.current_player:
             # return argmax q+u
             return node.get_child(max(q_and_u_values.keys(), key=lambda x : sum(q_and_u_values[x])))
@@ -124,7 +125,11 @@ class MCTS():
         distribution = {action : v*factor for action, v in distribution.items()}
         return distribution
     
+
+
+
         
+    
 
 
 
