@@ -14,23 +14,21 @@ We will in this project use the actor network as the target policy.
 
 class MCTS():
 
-    def __init__(self, target_policy, environment: Hex, exploration_bonus='uct', c=1):
+    def __init__(self, target_policy:'Actor', exploration_bonus='uct', c=1):
         if exploration_bonus=='uct':
             self.exploration_bonus = lambda s,a: self._utc(s,a,c)
         else:
             raise ValueError("exploration_bonus must be one of 'utc' (got {})".format(exploration_bonus))
         self.target_policy = target_policy
-        self.environment = environment.copy()
-        self.root = Node(environment=environment)
+        self.root = None
 
     def _traverse_to_leaf(self) -> Node:
         current = self.root
         while not self._is_leaf_node(current):
-            #path.append(current)
+            
             # Use the policy to get the next node and set it to current
             current = self.tree_policy(current)
-        # Add the leaf node to path
-        #path.append(current)
+        
         return current
 
     def _expand(self, node: Node) -> Node: 
@@ -69,8 +67,6 @@ class MCTS():
             current = current.parent
 
         current.traverse_count += 1
-        
-
 
     def _is_leaf_node(self, node) -> bool:
         """
@@ -98,7 +94,7 @@ class MCTS():
         """
         available_actions = node.environment.available_actions()
         q_and_u_values = {action : (node.q_values[action], self.exploration_bonus(node, action)) for action in available_actions}
-        
+
         if node.environment.current_player == self.root.environment.current_player:
             # return argmax q+u
             return node.get_child(max(q_and_u_values.keys(), key=lambda x : sum(q_and_u_values[x])))
@@ -117,12 +113,16 @@ class MCTS():
         value = self._rollout(expanded_node)
         self._back_prop(expanded_node, value)
 
-    def search(self, n_simulations: int) -> Tuple[int, int]:
+    def search(self, n_simulations: int, env: 'env') -> Tuple[int, int]:
+        self.root = Node(environment=env.copy())
+
         for _ in range(n_simulations):
             self.perform_simulation()
+        
         distribution = {child.action : child.traverse_count for child in self.root.get_children()}
         factor = 1/sum(distribution.values())
         distribution = {action : v*factor for action, v in distribution.items()}
+        
         return distribution
     
 
