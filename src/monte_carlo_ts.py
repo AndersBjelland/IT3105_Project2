@@ -48,10 +48,8 @@ class MCTS():
     def _rollout(self, node: Node) -> int:
         env = node.environment.copy()
         while not env.get_winner():
-            print(env.get_winner())
             action = self.target_policy.get_action(env)
             env.make_action(action)
-            env.display_board()
         
         winner = env.get_winner()
         return 1 if self.root.environment.current_player == winner else -1
@@ -120,7 +118,6 @@ class MCTS():
 
     def search(self, n_simulations: int) -> Tuple[int, int]:
         for _ in range(n_simulations):
-            print('_')
             self.perform_simulation()
         distribution = {child.action : child.traverse_count for child in self.root.get_children()}
         factor = 1/sum(distribution.values())
