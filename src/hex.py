@@ -62,7 +62,9 @@ class Hex:
     def make_action(self, coordinate: Tuple):
         cell = self.get_board().get_cell(coordinate[0], coordinate[1])
         if cell.get_piece() != EMPTY:
-            return 
+            print("tried this action {} on this board".format(coordinate))
+            self.display_board()
+            raise Exception()
         cell.set_piece(self.current_player)
         self.current_player = BLUE if self.current_player == RED else RED
     

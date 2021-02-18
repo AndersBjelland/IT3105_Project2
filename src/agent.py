@@ -3,33 +3,50 @@ from .monte_carlo_ts import MCTS
 from .hex import Hex
 import numpy as np
 import matplotlib.pyplot as plt
+from tqdm import tqdm
 
 
 class Agent:
 
-    def __init__(self, actor: Actor, mcts: MCTS):
+    def __init__(self, actor: Actor):
         self.actor = actor
-        self.mcts = mcts
+        
 
 
-    def run_episode(self, env: Hex):
+    def run_episode(self, env: Hex, n_simulations: int):
+        
+        mcts = MCTS(self.actor, env=env)
+
         replay_buffer = []
 
         while env.get_winner() == 0:
-            distribution = self.mcts.search(n_simulations=1000)
-            self.plot_distribution(distribution)
-            # Choose action with probability proportional to the traverse count
+            distribution = mcts.search(n_simulations=n_simulations)
             
+            # Choose action with probability proportional to the traverse count
             action = list(distribution.keys())[np.random.choice([_ for _ in range(len(distribution.keys()))], p=list(distribution.values()))]
-            print("Chosen action is {}".format(action))
-            replay_buffer.append((env, distribution))
+            replay_buffer.append((env, distribution.values()))
             
             env.make_action(action)
-            env.display_board()
             
-            self.mcts.set_new_root(action)
-        print("winner:", env.get_winner())
-        return replay_buffer, env
+            mcts.set_new_root(action)
+        
+        env.reset()
+        
+        return replay_buffer
+
+    def train_agent(self, env: Hex, n_episodes:int, n_simulations: int):
+        #replay_buffer = []
+
+        for _ in tqdm(range(n_episodes)):
+            replay_buffer = self.run_episode(env=env, n_simulations=n_simulations)
+            self.actor.end_of_episode(replay_buffer)
+            
+
+
+
+
+
+    
 
     def plot_distribution(self, distribution):
         print(distribution)

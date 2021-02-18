@@ -14,13 +14,14 @@ We will in this project use the actor network as the target policy.
 
 class MCTS():
 
-    def __init__(self, target_policy:'Actor', exploration_bonus='uct', c=1):
+    def __init__(self, target_policy:'Actor', env: Hex, exploration_bonus='uct', c=1):
         if exploration_bonus=='uct':
             self.exploration_bonus = lambda s,a: self._utc(s,a,c)
         else:
             raise ValueError("exploration_bonus must be one of 'utc' (got {})".format(exploration_bonus))
         self.target_policy = target_policy
-        self.root = None
+        self.env = env.copy()
+        self.root = Node(environment=self.env)
 
     def _traverse_to_leaf(self) -> Node:
         current = self.root
@@ -109,12 +110,16 @@ class MCTS():
     def perform_simulation(self):
 
         leaf_node = self._traverse_to_leaf()
+        #print("passed leaf")
         expanded_node = self._expand(leaf_node)
+        #print("passed expansion")
         value = self._rollout(expanded_node)
+        #print("passed rollout")
         self._back_prop(expanded_node, value)
+        #print("passed backprop")
+        #print("--------")
 
-    def search(self, n_simulations: int, env: 'env') -> Tuple[int, int]:
-        self.root = Node(environment=env.copy())
+    def search(self, n_simulations: int) -> Tuple[int, int]:
 
         for _ in range(n_simulations):
             self.perform_simulation()

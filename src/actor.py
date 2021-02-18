@@ -6,7 +6,7 @@ from tensorflow import keras as KER
 import tensorflow as tf
 import numpy as np
 
-from typing import Tuple, Callable, List
+from typing import Tuple, Callable, List, Dict
 
 """
 An actor using a convolutional network.
@@ -43,10 +43,36 @@ class Actor:
 
     def get_action(self, env):
         feature_maps = self.encoder.encode(env)
-        prob_dist = self.model(feature_maps)
+
+        prob_dist = self.model(feature_maps).numpy().reshape((-1,))
+
         # legal moves is a list with tuples like [ (1, (1,2)), (0,(0,0)) ]
         legal_moves = env.available_actions_binary()
+        
+        # Combine probability dist from the network and legal moves to dict on the form {action:probability, ...}
+        prob_dist = {legal_moves[i][1]:prob_dist[i] for i in range(len(prob_dist)) if legal_moves[i][0]}
+        
+        return max(prob_dist, key=prob_dist.get)
+        
+        
 
-        prob_dist = prob_dist*np.array([entry[0] for entry in legal_moves])
-        return legal_moves[np.argmax(prob_dist)][1]
+    def end_of_episode(self, replay_buffer):
+        x = tf.concat([self.encoder.encode(entry[0]) for entry in replay_buffer], axis=0)        
+        y = tf.convert_to_tensor([self.to_full_dist(entry) for entry in replay_buffer])
+        self.model.fit(x,y, epochs=5, verbose=0)
 
+
+    def to_full_dist(self, state_dist_pair: Tuple[Hex, Dict[Tuple[int, int], float]]):
+        """
+        Takes in a probability distribution over available actions in env
+
+        Returns:
+        Transfered to a vector with lenght equal to the maximal number of availablre actions in env, i.e. when env is empty.
+        Probability for actions not availablre are set to zero.
+        """
+        env, dist = state_dist_pair[0], state_dist_pair[1]
+       
+        moves = env.available_actions_binary()
+        
+        full_dist = [dist[move] if move in dist else 0 for move in moves]
+        return full_dist
