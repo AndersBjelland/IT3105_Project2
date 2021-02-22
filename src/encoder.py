@@ -6,8 +6,6 @@ import tensorflow as tf
 from typing import List, Tuple
 
 class Encoder(metaclass = abc.ABCMeta):
-    def __init__(self, environment):
-        self.env = environment
 
     @abc.abstractclassmethod
     def encode(self, piece_owner):
@@ -16,7 +14,7 @@ class Encoder(metaclass = abc.ABCMeta):
 
 class HexEncoder(Encoder):
 
-    def encode(self, piece_owner: int, padding=0) -> 'tensor':
+    def encode(self, env: Hex, padding=0) -> 'tensor':
         """
         Returns a tensor that will serve as one feature/encoding of a Hex board. 
         The dimension of the tensor will be (1, row_size, column_size, n_planes)
@@ -28,7 +26,7 @@ class HexEncoder(Encoder):
         # Alter the environment according to the padding parameter.
         # We add 'padding' layers of cells outside the current board and set the owner of those cells
         # according to the player that owns that side.
-        env = self.create_padded_env(padding=padding)
+        env = self.create_padded_env(env=env, padding=padding)
 
         blue = self.player_stones_encoding(1, env=env)
         red = self.player_stones_encoding(2, env=env)
@@ -40,8 +38,8 @@ class HexEncoder(Encoder):
         to_play_blue = self.to_play_endocing(1, env=env)
         to_play_red = self.to_play_endocing(2, env=env)
 
-        to_play_save_bridge = self.bridge_encoding(self.env.current_player, plane_type='save', env=env)
-        to_play_form_bridge = self.bridge_encoding(self.env.current_player, plane_type='form', env=env)
+        to_play_save_bridge = self.bridge_encoding(env.current_player, plane_type='save', env=env)
+        to_play_form_bridge = self.bridge_encoding(env.current_player, plane_type='form', env=env)
 
         planes = [blue, red, empty, blue_bridge, red_bridge, to_play_blue, to_play_red, to_play_save_bridge, to_play_form_bridge]
         # Create new axis in all planes
@@ -53,17 +51,17 @@ class HexEncoder(Encoder):
         # Return as tensor
         return tf.convert_to_tensor(feat)
 
-    def create_padded_env(self, padding:int) -> 'env':
+    def create_padded_env(self, env: Hex, padding:int) -> 'env':
         if padding < 1:
-            return self.env
-        current_env_size = self.env.size
+            return env
+        current_env_size = env.size
         new_size = (current_env_size[0] + padding+1, current_env_size[1] + padding+1)
         coordinate_scaler = lambda x: (x[0] + padding, x[1] + padding) # coresponding coordinate in new env
 
-        new_env = Hex(new_size, self.env.start_player)
+        new_env = Hex(new_size, env.start_player)
 
         # Iterate of cells in old env and set corresponding cells in new
-        for cell in self.env.get_board().get_cells():
+        for cell in env.get_board().get_cells():
             coordinate = (cell.get_row(), cell.get_column())
             coordinate = coordinate_scaler(coordinate)
             new_env.set_piece(coordinate, cell.get_piece())
