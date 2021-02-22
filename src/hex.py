@@ -7,6 +7,33 @@ import matplotlib.pyplot as plt
 import random
 from typing import Tuple, List, Set
 
+
+import abc
+
+class Environment(metaclass = abc.ABCMeta):
+
+    @abc.abstractclassmethod
+    def copy(self) -> 'Environment':
+        pass
+
+    @abc.abstractclassmethod
+    def get_winner(self) -> int:
+        pass
+
+    @abc.abstractclassmethod
+    def available_actions(self):
+        pass
+
+    @abc.abstractclassmethod
+    def make_action(self, action):
+        pass
+
+    @abc.abstractclassmethod
+    def get_current_player(self):
+        pass
+
+
+
 """
 Class representing the game of HEX.
 There are two players, BLUE and RED.
@@ -23,7 +50,7 @@ cell [0,n] is the right (east)
 
 EMPTY, BLUE, RED = 0, 1, 2
 
-class Hex:
+class Hex(Environment):
     def __init__(self, size: Tuple[int, int], start_player=BLUE):
         """
         size: size of grid (n,n)
@@ -51,6 +78,9 @@ class Hex:
             equivalent_cell = new_hex.get_board().get_cell(cell.get_row(), cell.get_column())
             equivalent_cell.set_piece(cell.get_piece())
         return new_hex
+
+    def get_current_player(self) -> int:
+        return self.current_player
 
 
     def get_board(self) -> "HexagonalGrid":
@@ -143,7 +173,7 @@ class Hex:
     def available_actions(self) -> List[Tuple[int,int]]:
         return [(cell.get_row(), cell.get_column()) for cell in self.get_board().get_cells() if cell.get_piece() == 0]
 
-    def available_actions_binary(self) -> List[int]:
+    def available_actions_binary(self) -> List[Tuple[int, Tuple[int, int]]]:
         """
         Returns a list with 0 or 1 indicating if an action is legal or not, combined with the corresponding action
         """
@@ -172,7 +202,20 @@ class Hex:
         cell = self.get_board().get_cell(coordinate[0], coordinate[1])
         cell.set_piece(owner)
         
-        
+    def equals(self, hex) -> bool:
+        "Checks if two hex games are equal"
+        if self.size != hex.size:
+            return False
+
+        for row in range(self.size[0]):
+            for column in range(self.size[1]):
+                if self.get_board().get_cell(row, column).get_piece() != hex.get_board().get_cell(row, column).get_piece():
+                    return False
+        if self.current_player != hex.current_player:
+            return False
+        return True
+
+
 
 
     ######### Visualization methods ##############
