@@ -1,9 +1,11 @@
 from .hex import Hex
+from .nim import Nim
 from .node import Node
 
-from typing import Callable, List, Tuple
+from typing import Callable, List, Tuple, Dict
 import numpy as np
 import random
+import networkx as nx
 
 """
 This class contains code to perform a Monte Carlo Tree Search (MCTS).
@@ -14,11 +16,8 @@ We will in this project use the actor network as the target policy.
 
 class MCTS():
 
-    def __init__(self, target_policy:'Actor', env: Hex, exploration_bonus='uct', c=1):
-        if exploration_bonus=='uct':
-            self.exploration_bonus = lambda s,a: self._utc(s,a,c)
-        else:
-            raise ValueError("exploration_bonus must be one of 'utc' (got {})".format(exploration_bonus))
+    def __init__(self, target_policy:'Actor', env: Hex):
+        self.exploration_bonus = None
         self.target_policy = target_policy
         self.env = env.copy()
         self.root = Node(environment=self.env)
@@ -39,8 +38,10 @@ class MCTS():
 
         env = node.environment.copy()
         actions = [action for action in env.available_actions() if node.get_child(action) is None]
+        
         action = random.choice(actions)
         env.make_action(action)
+       
 
         return Node(environment=env, parent=node, action=action)
 
@@ -51,7 +52,7 @@ class MCTS():
             env.make_action(action)
         
         winner = env.get_winner()
-        return 1 if self.root.environment.current_player == winner else -1
+        return 1 if self.root.environment.get_current_player() == winner else -1
             
 
     def _back_prop(self, node: Node, value: float):
@@ -96,7 +97,7 @@ class MCTS():
         available_actions = node.environment.available_actions()
         q_and_u_values = {action : (node.q_values[action], self.exploration_bonus(node, action)) for action in available_actions}
 
-        if node.environment.current_player == self.root.environment.current_player:
+        if node.environment.get_current_player() == self.root.environment.get_current_player():
             # return argmax q+u
             return node.get_child(max(q_and_u_values.keys(), key=lambda x : sum(q_and_u_values[x])))
 
@@ -105,12 +106,18 @@ class MCTS():
 
     def set_new_root(self, action):
         child = self.root.get_child(action)
-        self.root = child
+        if child:
+            self.root = child
+        else:
+            env = self.root.environment.copy()
+            env.make_action(action)
+            self.root = Node(environment=env)
 
     def perform_simulation(self):
 
         leaf_node = self._traverse_to_leaf()
         #print("passed leaf")
+        
         expanded_node = self._expand(leaf_node)
         #print("passed expansion")
         value = self._rollout(expanded_node)
@@ -119,7 +126,11 @@ class MCTS():
         #print("passed backprop")
         #print("--------")
 
-    def search(self, n_simulations: int) -> Tuple[int, int]:
+    def search(self, n_simulations: int, exploration_bonus='uct', c=1) -> Dict['action','prob']:
+        if exploration_bonus=='uct':
+            self.exploration_bonus = lambda s,a: self._utc(s,a,c)
+        else:
+            raise ValueError("exploration_bonus must be one of 'utc' (got {})".format(exploration_bonus))
 
         for _ in range(n_simulations):
             self.perform_simulation()
@@ -129,6 +140,33 @@ class MCTS():
         distribution = {action : v*factor for action, v in distribution.items()}
         
         return distribution
+
+
+    def visualize_tree(self):
+        edge_labels = {}
+        G = nx.DiGraph()
+        to_visit = [self.root]
+        visited = []
+        while len(to_visit) > 0:
+            #print("len to visit",len(to_visit))
+            current = to_visit.pop()
+            visited.append(current)
+            parent_node = (current.action, current.environment.remaining, id(current))
+            G.add_node(parent_node)
+            
+            for child in current.get_children():
+                child_node = (child.action, child.environment.remaining, id(child))
+                
+                G.add_edge(parent_node, child_node)
+                edge_labels[(parent_node, child_node)] = child.traverse_count
+           
+            to_visit += current.get_children()
+            
+        return G, edge_labels
+
+
+
+
     
 
 
