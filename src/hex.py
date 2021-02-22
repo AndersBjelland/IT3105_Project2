@@ -94,7 +94,7 @@ class Hex(Environment):
         if cell.get_piece() != EMPTY:
             print("tried this action {} on this board".format(coordinate))
             self.display_board()
-            raise Exception()
+            raise ValueError("Action cannot be made because {} is not empty".format(coordinate))
         cell.set_piece(self.current_player)
         self.current_player = BLUE if self.current_player == RED else RED
     
