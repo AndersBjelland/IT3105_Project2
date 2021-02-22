@@ -5,6 +5,7 @@ from .encoder import Encoder
 from tensorflow import keras as KER
 import tensorflow as tf
 import numpy as np
+import random
 
 from typing import Tuple, Callable, List, Dict
 
@@ -51,6 +52,10 @@ class Actor:
         
         # Combine probability dist from the network and legal moves to dict on the form {action:probability, ...}
         prob_dist = {legal_moves[i][1]:prob_dist[i] for i in range(len(prob_dist)) if legal_moves[i][0]}
+        
+        # Return an action in a epsilon greedy manner
+        if random.random() <= self.epsilon:
+            return random.choice(list(prob_dist.keys()))
         
         return max(prob_dist, key=prob_dist.get)
         
