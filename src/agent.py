@@ -35,21 +35,28 @@ class Agent:
         
         return replay_buffer
 
-    def train_agent(self, env: Hex, n_episodes:int, n_simulations: int, epochs=1):
+    def train_agent(self, env: Hex, n_episodes:int, n_simulations: int, epochs=1, M=1):
         replay_buffer = []
+        epsilon_decay_factor = (self.actor.epsilon - self.actor.end_epsilon)/n_episodes
+        save_model_interval = math.floor(n_episodes/M)
         
 
-        for _ in tqdm(range(n_episodes)):
+        for i in tqdm(range(n_episodes)):
             # Add new training examples to the replay buffer
             replay_buffer = self.run_episode(env=env, n_simulations=n_simulations) + replay_buffer
             # Only keep the last 5000 steps
             replay_buffer = replay_buffer[:5000]
+            # Train network
             self.actor.end_of_episode(replay_buffer, epochs=epochs)
+            # Update epsilon
+            self.actor.epsilon = self.actor.epsilon - epsilon_decay_factor*(i+1)
 
-            if _ == math.floor(n_episodes/2):
-                self.actor.model.save('model1.h5')
+            # Save model to file
+            if i % save_model_interval == 0:
+                self.actor.model.save('first_ex_model_{}.h5'.format(i))
+            
                 
-        self.actor.model.save('model2.h5')
+        
 
         
 
