@@ -4,6 +4,8 @@ from .hex import Hex
 import numpy as np
 import matplotlib.pyplot as plt
 from tqdm import tqdm
+from copy import deepcopy
+import math
 
 
 class Agent:
@@ -11,8 +13,6 @@ class Agent:
     def __init__(self, actor: Actor):
         self.actor = actor
         
-
-
     def run_episode(self, env: Hex, n_simulations: int):
         
         mcts = MCTS(self.actor, env=env)
@@ -22,11 +22,14 @@ class Agent:
         while env.get_winner() == 0:
             distribution = mcts.search(n_simulations=n_simulations)
             
-            # Choose action with probability proportional to the traverse count
-            action = list(distribution.keys())[np.random.choice([_ for _ in range(len(distribution.keys()))], p=list(distribution.values()))]
-            replay_buffer.append((env, distribution.values()))
+            # Choose action greedily
+            action = max(distribution, key=distribution.get)
+            
+            replay_buffer.append((env.copy(), distribution))
             
             env.make_action(action)
+            #self.plot_distribution(distribution)
+            #env.display_board()
             
             mcts.set_new_root(action)
         
@@ -34,12 +37,24 @@ class Agent:
         
         return replay_buffer
 
-    def train_agent(self, env: Hex, n_episodes:int, n_simulations: int):
-        #replay_buffer = []
+    def train_agent(self, env: Hex, n_episodes:int, n_simulations: int, epochs=1):
+        replay_buffer = []
+        
 
         for _ in tqdm(range(n_episodes)):
-            replay_buffer = self.run_episode(env=env, n_simulations=n_simulations)
-            self.actor.end_of_episode(replay_buffer)
+            # Add new training examples to the replay buffer
+            replay_buffer += self.run_episode(env=env, n_simulations=n_simulations)
+            # Only keep the last 5000 steps
+            replay_buffer = replay_buffer[:5000]
+            self.actor.end_of_episode(replay_buffer, epochs=epochs)
+
+            if _ == math.floor(n_episodes/2):
+                self.actor.model.save('model1.h5')
+                
+        self.actor.model.save('model2.h5')
+
+        
+
             
 
 
