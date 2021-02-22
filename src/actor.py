@@ -39,7 +39,7 @@ class Actor:
             else:
                 self.model.add(KER.layers.Dense(nn_shape[i], activation=nn_last_activation))
 
-        self.model.compile(optimizer=opt(lr=self.learning_rate), loss=loss, metrics=[KER.metrics.categorical_accuracy])
+        self.model.compile(optimizer=opt(lr=self.learning_rate), loss=loss, metrics=['accuracy'])
 
     def get_action(self, env):
         feature_maps = self.encoder.encode(env)
@@ -56,11 +56,15 @@ class Actor:
         
         
 
-    def end_of_episode(self, replay_buffer):
-        x = tf.concat([self.encoder.encode(entry[0]) for entry in replay_buffer], axis=0)        
-        y = tf.convert_to_tensor([self.to_full_dist(entry) for entry in replay_buffer])
-        self.model.fit(x,y, epochs=5, verbose=0)
+    def end_of_episode(self, replay_buffer, epochs=1, batch_size=128):
+        x,y = self.convert_to_network_input(replay_buffer)
+        return self.model.fit(x,y, epochs=epochs, batch_size=batch_size)
 
+
+    def convert_to_network_input(self, replay_buffer):
+        x = tf.concat([self.encoder.encode(entry[0]) for entry in replay_buffer], 0)        
+        y = tf.convert_to_tensor([self.to_full_dist(entry) for entry in replay_buffer])
+        return x,y
 
     def to_full_dist(self, state_dist_pair: Tuple[Hex, Dict[Tuple[int, int], float]]):
         """
@@ -72,7 +76,8 @@ class Actor:
         """
         env, dist = state_dist_pair[0], state_dist_pair[1]
        
-        moves = env.available_actions_binary()
+        moves = [action[1] for action in env.available_actions_binary()]
+
         
         full_dist = [dist[move] if move in dist else 0 for move in moves]
         return full_dist
