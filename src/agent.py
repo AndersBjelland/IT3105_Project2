@@ -28,8 +28,6 @@ class Agent:
             replay_buffer.append((env.copy(), distribution))
             
             env.make_action(action)
-            #self.plot_distribution(distribution)
-            #env.display_board()
             
             mcts.set_new_root(action)
         
@@ -43,7 +41,7 @@ class Agent:
 
         for _ in tqdm(range(n_episodes)):
             # Add new training examples to the replay buffer
-            replay_buffer += self.run_episode(env=env, n_simulations=n_simulations)
+            replay_buffer = self.run_episode(env=env, n_simulations=n_simulations) + replay_buffer
             # Only keep the last 5000 steps
             replay_buffer = replay_buffer[:5000]
             self.actor.end_of_episode(replay_buffer, epochs=epochs)
