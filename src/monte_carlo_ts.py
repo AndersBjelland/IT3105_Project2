@@ -116,15 +116,10 @@ class MCTS():
     def perform_simulation(self):
 
         leaf_node = self._traverse_to_leaf()
-        #print("passed leaf")
-        
         expanded_node = self._expand(leaf_node)
-        #print("passed expansion")
         value = self._rollout(expanded_node)
-        #print("passed rollout")
         self._back_prop(expanded_node, value)
-        #print("passed backprop")
-        #print("--------")
+        
 
     def search(self, n_simulations: int, exploration_bonus='uct', c=1) -> Dict['action','prob']:
         if exploration_bonus=='uct':
