@@ -54,17 +54,9 @@ class Agent:
             if (i+1) % save_model_interval == 0:
                 self.actor.model.save('third_ex_model_{}.h5'.format(i+1))
             
-                
-        
 
-        
 
             
-
-
-
-
-
     
 
     def plot_distribution(self, distribution):
