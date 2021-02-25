@@ -44,7 +44,7 @@ class Agent:
             # Add new training examples to the replay buffer
             replay_buffer = self.run_episode(env=env, n_simulations=n_simulations) + replay_buffer
             # Only keep the last 5000 steps
-            replay_buffer = replay_buffer[:5000]
+            replay_buffer = replay_buffer[:50000]
             # Train network
             self.actor.end_of_episode(replay_buffer, epochs=epochs)
             # Update epsilon
@@ -53,11 +53,6 @@ class Agent:
             # Save model to file
             if (i+1) % save_model_interval == 0:
                 self.actor.model.save('third_ex_model_{}.h5'.format(i+1))
-            
-
-
-            
-    
 
     def plot_distribution(self, distribution):
         print(distribution)
