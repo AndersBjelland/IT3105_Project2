@@ -6,6 +6,7 @@ from typing import Callable, List, Tuple, Dict
 import numpy as np
 import random
 import networkx as nx
+import matplotlib.pyplot as plt
 
 """
 This class contains code to perform a Monte Carlo Tree Search (MCTS).
@@ -37,6 +38,8 @@ class MCTS():
             return node
 
         env = node.environment.copy()
+
+        # Get actions that are not yet taken from the node we expand
         actions = [action for action in env.available_actions() if node.get_child(action) is None]
         
         action = random.choice(actions)
@@ -63,8 +66,8 @@ class MCTS():
             current.state_value += value
             parent = current.parent
             current.traverse_count += 1
-
-            parent.q_values[current.action] = value if current.action not in parent.q_values else (parent.state_value + value)/current.traverse_count
+                
+            parent.q_values[current.action] = value if current.action not in parent.q_values else (current.state_value)/current.traverse_count
             
             current = current.parent
 
@@ -121,7 +124,7 @@ class MCTS():
         self._back_prop(expanded_node, value)
         
 
-    def search(self, n_simulations: int, exploration_bonus='uct', c=1) -> Dict['action','prob']:
+    def search(self, n_simulations: int, exploration_bonus='uct', c=1, update_rate = 10, ax1 = None, ax2=None, plotting=False) -> Dict['action','prob']:
         if exploration_bonus=='uct':
             self.exploration_bonus = lambda s,a: self._utc(s,a,c)
         else:
@@ -129,6 +132,19 @@ class MCTS():
 
         for _ in range(n_simulations):
             self.perform_simulation()
+
+            if (_+1) % update_rate == 0 and plotting:
+                ax1.clear()
+                ax2.clear()
+                distribution = {child.action : child.traverse_count for child in self.root.get_children()}
+                factor = 1/sum(distribution.values())
+                distribution = {action : v*factor for action, v in distribution.items()}
+                env = self.env
+                env.reset()
+                env.display_board(ax=ax1, distribution=distribution)
+                ax2.bar([str(action) for action in distribution.keys()],list(distribution.values()))
+                plt.draw()
+                plt.pause(1)
         
         distribution = {child.action : child.traverse_count for child in self.root.get_children()}
         factor = 1/sum(distribution.values())
@@ -137,7 +153,7 @@ class MCTS():
         return distribution
 
 
-    def visualize_tree(self):
+    def visualize_tree(self, root_color):
         edge_labels = {}
         G = nx.DiGraph()
         to_visit = [self.root]
@@ -146,18 +162,42 @@ class MCTS():
             #print("len to visit",len(to_visit))
             current = to_visit.pop()
             visited.append(current)
-            parent_node = (current.action, current.environment.remaining, id(current))
-            G.add_node(parent_node)
+            parent_node = (current.action, id(current))
+            G.add_node(parent_node, color = root_color)
+            root_color = 'blue' if root_color != 'blue' else 'red'
             
             for child in current.get_children():
-                child_node = (child.action, child.environment.remaining, id(child))
-                
+                child_node = (child.action, id(child))
+                G.add_node(child_node, color = root_color)
                 G.add_edge(parent_node, child_node)
-                edge_labels[(parent_node, child_node)] = child.traverse_count
-           
+                edge_labels[(parent_node, child_node)] = (child.traverse_count, current.q_values[child.action])
+            
+            root_color = 'blue' if root_color != 'blue' else 'red'
             to_visit += current.get_children()
             
         return G, edge_labels
+
+    def visualize_tree_nim(self):
+            edge_labels = {}
+            G = nx.DiGraph()
+            to_visit = [self.root]
+            visited = []
+            while len(to_visit) > 0:
+                #print("len to visit",len(to_visit))
+                current = to_visit.pop()
+                visited.append(current)
+                parent_node = (current.action, current.environment.remaining, id(current))
+                G.add_node(parent_node)
+                
+                for child in current.get_children():
+                    child_node = (child.action, child.environment.remaining, id(child))
+                    
+                    G.add_edge(parent_node, child_node)
+                    edge_labels[(parent_node, child_node)] = (child.traverse_count, round(current.q_values[child.action],4))
+            
+                to_visit += current.get_children()
+                
+            return G, edge_labels
 
 
 
