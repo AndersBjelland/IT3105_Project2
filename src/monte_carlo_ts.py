@@ -13,6 +13,33 @@ This class contains code to perform a Monte Carlo Tree Search (MCTS).
 It takes as input a tree policy that is used to traverse the tree and a default/target/bahaviour policy
 for managing rollouts.
 We will in this project use the actor network as the target policy.
+
+The one search simiulation is split in four stages. 
+
+Step 1 - Traverse to leaf:
+    Traverse to a leaf node given the tree policy. A leaf node is defined as a node where all actions are not yet been explored.
+
+Step 2 - Expand leaf node:
+    Expand the leaf node and create a new node representing one of the actions still not explored from the leaf node.
+
+Step 3 - Rollout:
+    Use the target policy to perform a rollout to a final state. Instead of recording the result as +1 or -1 
+    depending on the current player at the root node is the final winner or not, we record +1 or -1 depending on 
+    the winner is the current player at the node we run the rollout from. 
+
+Step 4 - Backpropagation:
+    Update the traverse count in the path chosen from root node to the expanded node. In addition we update the q-values in each node as follows.
+    
+    We also update the state value in all nodes using the value recorded from rollout, V, in the following way, 
+    new_state_value = old_state_value + V if node.player == expanded_node.player else old_state_value - V. This updating rule results in the value in each state being
+    with respect to the current player in that state.
+
+    The Q-values are calculated and updated by negating the state value of the next state and divide it by the traverse count.
+    
+    Q_values at each node is updated to be new_state_value divided by the traverse count.
+
+By alternating the sign of V when backpropagating up the path we allow the tree policy to always choose the best node by maximizing, instead of 
+alternating maximizing and minimizing depending on which player that plays at each node. This makes it easier when we later prune the tree and move the root. 
 """
 
 class MCTS():
@@ -55,7 +82,7 @@ class MCTS():
             env.make_action(action)
         
         winner = env.get_winner()
-        return 1 if self.root.environment.get_current_player() == winner else -1
+        return 1 if node.environment.get_current_player() == winner else -1
             
 
     def _back_prop(self, node: Node, value: float):
@@ -63,11 +90,13 @@ class MCTS():
         current = node
 
         while current != self.root:
-            current.state_value += value
+            # Update state value according to which player plays at current node compared to the node we expanded from
+            update_value = value if current.environment.get_current_player() == node.environment.get_current_player() else - value
+            current.state_value += update_value
             parent = current.parent
             current.traverse_count += 1
                 
-            parent.q_values[current.action] = value if current.action not in parent.q_values else (current.state_value)/current.traverse_count
+            parent.q_values[current.action] = -update_value if current.action not in parent.q_values else -(current.state_value)/current.traverse_count
             
             current = current.parent
 
@@ -99,14 +128,10 @@ class MCTS():
         """
         available_actions = node.environment.available_actions()
         q_and_u_values = {action : (node.q_values[action], self.exploration_bonus(node, action)) for action in available_actions}
-
-        if node.environment.get_current_player() == self.root.environment.get_current_player():
-            # return argmax q+u
-            return node.get_child(max(q_and_u_values.keys(), key=lambda x : sum(q_and_u_values[x])))
-
-        # return argmin q-u
-        return node.get_child(min(q_and_u_values.keys(), key=lambda x : q_and_u_values[x][0] - q_and_u_values[x][1]))
-
+        # return argmax q+u
+        return node.get_child(max(q_and_u_values.keys(), key=lambda x : sum(q_and_u_values[x])))
+        
+    
     def set_new_root(self, action):
         child = self.root.get_child(action)
         if child:
@@ -186,11 +211,11 @@ class MCTS():
                 #print("len to visit",len(to_visit))
                 current = to_visit.pop()
                 visited.append(current)
-                parent_node = (current.action, current.environment.remaining, id(current))
+                parent_node = (current.action, current.environment.remaining, current.state_value, id(current))
                 G.add_node(parent_node)
                 
                 for child in current.get_children():
-                    child_node = (child.action, child.environment.remaining, id(child))
+                    child_node = (child.action, child.environment.remaining, child.state_value, id(child))
                     
                     G.add_edge(parent_node, child_node)
                     edge_labels[(parent_node, child_node)] = (child.traverse_count, round(current.q_values[child.action],4))
