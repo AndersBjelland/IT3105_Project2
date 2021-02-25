@@ -16,7 +16,6 @@ class Agent:
     def run_episode(self, env: Hex, n_simulations: int):
         
         mcts = MCTS(self.actor, env=env)
-
         replay_buffer = []
 
         while env.get_winner() == 0:
@@ -52,8 +51,8 @@ class Agent:
             self.actor.epsilon = self.actor.epsilon - epsilon_decay_factor*(i+1)
 
             # Save model to file
-            if i % save_model_interval == 0:
-                self.actor.model.save('first_ex_model_{}.h5'.format(i))
+            if (i+1) % save_model_interval == 0:
+                self.actor.model.save('third_ex_model_{}.h5'.format(i+1))
             
                 
         
