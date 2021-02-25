@@ -262,15 +262,24 @@ class Hex(Environment):
             visited.append(cell)
         return G
 
-    def display_board(self, pace = 0.3):
+    def get_angle(self):
+        return 5*np.pi/4
+
+    def display_board(self, pace = 0.3, ax=None, distribution=None):
         angle = 5*np.pi/4
         G = self.get_networkx_graph()
         # Rotate the position of the nodes
         pos = rotate(G, angle)
         # create color map according to whether the cells are empty or not
-        c_map = self.get_node_colors(G)
+        c_map = plt.cm.get_cmap('YlOrRd') if distribution else self.get_node_colors(G)
         edge_color = self.get_edge_colors(G)
         edge_weights = [G[u][v]['weight'] for u,v in G.edges()]
         # Display the board
-        nx.draw(G, with_labels=True, node_size=1000, pos=pos, node_color=c_map, edge_color=edge_color, width=edge_weights)
+        if distribution:
+            node_color = [distribution[location] if location in distribution else 0 for location in G.nodes()]
+            vmax = max(node_color)*1.2
+            vmin = min(list(distribution.values()))/2
+            nx.draw(G, ax=ax, with_labels=True, node_size=1000, pos=pos, node_color=node_color, cmap=c_map, edge_color=edge_color, width=edge_weights, vmax=vmax, vmin=vmin)
+        else:
+            nx.draw(G, ax=ax, with_labels=True, node_size=1000, pos=pos, node_color=c_map, edge_color=edge_color, width=edge_weights)
         plt.pause(pace)
