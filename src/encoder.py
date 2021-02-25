@@ -14,7 +14,11 @@ class Encoder(metaclass = abc.ABCMeta):
 
 class HexEncoder(Encoder):
 
-    def encode(self, env: Hex, padding=0) -> 'tensor':
+    def __init__(self, padding = 0):
+        self.padding = padding
+
+
+    def encode(self, env: Hex) -> 'tensor':
         """
         Returns a tensor that will serve as one feature/encoding of a Hex board. 
         The dimension of the tensor will be (1, row_size, column_size, n_planes)
@@ -22,7 +26,7 @@ class HexEncoder(Encoder):
         The padding parrameters specifies how much the planes will be padded.
         
         """
-
+        padding = self.padding
         # Alter the environment according to the padding parameter.
         # We add 'padding' layers of cells outside the current board and set the owner of those cells
         # according to the player that owns that side.
@@ -55,7 +59,7 @@ class HexEncoder(Encoder):
         if padding < 1:
             return env
         current_env_size = env.size
-        new_size = (current_env_size[0] + padding+1, current_env_size[1] + padding+1)
+        new_size = (current_env_size[0] + padding*2, current_env_size[1] + padding*2)
         coordinate_scaler = lambda x: (x[0] + padding, x[1] + padding) # coresponding coordinate in new env
 
         new_env = Hex(new_size, env.start_player)
