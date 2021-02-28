@@ -48,7 +48,9 @@ class MCTS():
         self.exploration_bonus = None
         self.target_policy = target_policy
         self.env = env.copy()
-        self.root = Node(environment=self.env)
+        self.org_env = env
+        self.root = Node(current_player=self.env.get_current_player())
+        
 
     def _traverse_to_leaf(self) -> Node:
         current = self.root
@@ -56,33 +58,34 @@ class MCTS():
             
             # Use the policy to get the next node and set it to current
             current = self.tree_policy(current)
+            self.env.make_action(current.action)
         
         return current
 
     def _expand(self, node: Node) -> Node: 
         # Check if the node represents a final state
-        if node.environment.get_winner():
+        if self.env.get_winner():
             return node
 
-        env = node.environment.copy()
-
         # Get actions that are not yet taken from the node we expand
-        actions = [action for action in env.available_actions() if node.get_child(action) is None]
+        actions = [action for action in self.env.available_actions() if node.get_child(action) is None]
         
         action = random.choice(actions)
-        env.make_action(action)
+        self.env.make_action(action)
        
 
-        return Node(environment=env, parent=node, action=action)
+        return Node(current_player = self.env.get_current_player(),parent=node, action=action)
 
     def _rollout(self, node: Node) -> int:
-        env = node.environment.copy()
-        while not env.get_winner():
-            action = self.target_policy.get_action(env)
-            env.make_action(action)
+        player = self.env.get_current_player()
         
-        winner = env.get_winner()
-        return 1 if node.environment.get_current_player() == winner else -1
+        while not self.env.get_winner():
+            action = self.target_policy.get_action(self.env)
+            self.env.make_action(action)
+        
+        winner = self.env.get_winner()
+        self.env = self.org_env.copy()
+        return 1 if player == winner else -1
             
 
     def _back_prop(self, node: Node, value: float):
@@ -91,7 +94,7 @@ class MCTS():
 
         while current != self.root:
             # Update state value according to which player plays at current node compared to the node we expanded from
-            update_value = value if current.environment.get_current_player() == node.environment.get_current_player() else - value
+            update_value = value if current.current_player == node.current_player else - value
             current.state_value += update_value
             parent = current.parent
             current.traverse_count += 1
@@ -106,8 +109,10 @@ class MCTS():
         """
         A node is defined as a leaf node if it has a potential
         child from which no simulation (rollout) has yet been initiated
+        We know that for a k x k board there are k x k - d available moves for a node at depth d.
+        We therefore check if there are k x k - d children, if it is not we are at a leaf node.
         """
-        available_actions = node.environment.available_actions()
+        available_actions = self.env.available_actions()
 
         # If there are available actions and the number of children equals the number of available actions we can conclude that it is not a leaf node
         if len(available_actions) > 0 and len(available_actions) == len(node.get_children()):
@@ -126,7 +131,7 @@ class MCTS():
         """
         Returns the next node in the search
         """
-        available_actions = node.environment.available_actions()
+        available_actions = [child.action for child in node.get_children()]
         q_and_u_values = {action : (node.q_values[action], self.exploration_bonus(node, action)) for action in available_actions}
         # return argmax q+u
         return node.get_child(max(q_and_u_values.keys(), key=lambda x : sum(q_and_u_values[x])))
@@ -137,9 +142,10 @@ class MCTS():
         if child:
             self.root = child
         else:
-            env = self.root.environment.copy()
-            env.make_action(action)
-            self.root = Node(environment=env)
+            self.env.make_action(action)
+            current_player = self.env.get_current_player()
+            
+            self.root = Node(current_player=current_player)
 
     def perform_simulation(self):
 
@@ -211,11 +217,11 @@ class MCTS():
                 #print("len to visit",len(to_visit))
                 current = to_visit.pop()
                 visited.append(current)
-                parent_node = (current.action, current.environment.remaining, current.state_value, id(current))
+                parent_node = (current.action, self.env.n - current.depth, current.state_value, id(current))
                 G.add_node(parent_node)
                 
                 for child in current.get_children():
-                    child_node = (child.action, child.environment.remaining, child.state_value, id(child))
+                    child_node = (child.action, self.env.n - child.depth, child.state_value, id(child))
                     
                     G.add_edge(parent_node, child_node)
                     edge_labels[(parent_node, child_node)] = (child.traverse_count, round(current.q_values[child.action],4))
