@@ -48,7 +48,7 @@ class MCTS():
         self.exploration_bonus = None
         self.target_policy = target_policy
         self.env = env.copy()
-        self.org_env = env
+        self.org_env = env.copy()
         self.root = Node(current_player=self.env.get_current_player())
         
 
@@ -69,7 +69,22 @@ class MCTS():
 
         # Get actions that are not yet taken from the node we expand
         actions = [action for action in self.env.available_actions() if node.get_child(action) is None]
-        
+        if node.action in actions:
+            print("!!!!!!!!!!!!")
+            print("node action: ", node.action)
+            print("current player:", node.current_player)
+            plt.figure()
+            self.env.display_board()
+            plt.title("env at node with too many actions")
+        if not actions:
+            print(node.depth)
+            print("available actions from expand: ", self.env.available_actions())
+            print("len available actions", len(self.env.available_actions()))
+            print("len children", len(node.get_children()))
+            child_actions = [child.action for child in node.get_children()]
+            print("actions from children: ", {action:child_actions.count(action) for action in child_actions})
+            plt.figure()
+            self.env.display_board()
         action = random.choice(actions)
         self.env.make_action(action)
        
@@ -141,9 +156,19 @@ class MCTS():
         child = self.root.get_child(action)
         if child:
             self.root = child
+            self.env.make_action(action)
+            self.org_env = self.env.copy()
+            print("gikk i if")
+            self.org_env.display_board()
+            print("available actions: ", self.org_env.available_actions())
+            print("Current player at new root:", self.root.current_player)
+            print("Action at new root", self.root.action)
         else:
             self.env.make_action(action)
             current_player = self.env.get_current_player()
+            self.org_env = self.env.copy()
+            print("gikk i else")
+            self.org_env.display_board()
             
             self.root = Node(current_player=current_player)
 
@@ -170,7 +195,7 @@ class MCTS():
                 distribution = {child.action : child.traverse_count for child in self.root.get_children()}
                 factor = 1/sum(distribution.values())
                 distribution = {action : v*factor for action, v in distribution.items()}
-                env = self.env
+                env = self.env.copy()
                 env.reset()
                 env.display_board(ax=ax1, distribution=distribution)
                 ax2.bar([str(action) for action in distribution.keys()],list(distribution.values()))
@@ -213,15 +238,19 @@ class MCTS():
             G = nx.DiGraph()
             to_visit = [self.root]
             visited = []
+            remaining = self.env.n
             while len(to_visit) > 0:
                 #print("len to visit",len(to_visit))
                 current = to_visit.pop()
+                remaining = remaining - current.action if current.action != None else remaining
+                
                 visited.append(current)
-                parent_node = (current.action, self.env.n - current.depth, current.state_value, id(current))
+                parent_node = (current.action, remaining, current.state_value, id(current))
                 G.add_node(parent_node)
                 
+                
                 for child in current.get_children():
-                    child_node = (child.action, self.env.n - child.depth, child.state_value, id(child))
+                    child_node = (child.action, remaining-child.action, child.state_value, id(child))
                     
                     G.add_edge(parent_node, child_node)
                     edge_labels[(parent_node, child_node)] = (child.traverse_count, round(current.q_values[child.action],4))
