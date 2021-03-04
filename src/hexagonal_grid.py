@@ -85,7 +85,8 @@ class Triangle(HexagonalGrid):
         base = size[0]
         for row in range(base):
             for column in range(row+1):
-                self.cells.append(Cell(row,column))
+                cell = Cell(row,column)
+                self.cells[cell.__hash__()] = cell
         self.generate_neighbours()
     
     def get_neighbouring_indecies(self, row: int, column: int) -> List[Tuple[int,int]]:
