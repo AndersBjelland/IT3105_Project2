@@ -69,22 +69,6 @@ class MCTS():
 
         # Get actions that are not yet taken from the node we expand
         actions = [action for action in self.env.available_actions() if node.get_child(action) is None]
-        if node.action in actions:
-            print("!!!!!!!!!!!!")
-            print("node action: ", node.action)
-            print("current player:", node.current_player)
-            plt.figure()
-            self.env.display_board()
-            plt.title("env at node with too many actions")
-        if not actions:
-            print(node.depth)
-            print("available actions from expand: ", self.env.available_actions())
-            print("len available actions", len(self.env.available_actions()))
-            print("len children", len(node.get_children()))
-            child_actions = [child.action for child in node.get_children()]
-            print("actions from children: ", {action:child_actions.count(action) for action in child_actions})
-            plt.figure()
-            self.env.display_board()
         action = random.choice(actions)
         self.env.make_action(action)
        
@@ -158,16 +142,11 @@ class MCTS():
             self.root = child
             self.env.make_action(action)
             self.org_env = self.env.copy()
-            print("gikk i if")
             self.org_env.display_board()
-            print("available actions: ", self.org_env.available_actions())
-            print("Current player at new root:", self.root.current_player)
-            print("Action at new root", self.root.action)
         else:
             self.env.make_action(action)
             current_player = self.env.get_current_player()
             self.org_env = self.env.copy()
-            print("gikk i else")
             self.org_env.display_board()
             
             self.root = Node(current_player=current_player)
@@ -215,7 +194,6 @@ class MCTS():
         to_visit = [self.root]
         visited = []
         while len(to_visit) > 0:
-            #print("len to visit",len(to_visit))
             current = to_visit.pop()
             visited.append(current)
             parent_node = (current.action, id(current))
@@ -240,7 +218,6 @@ class MCTS():
             visited = []
             remaining = self.env.n
             while len(to_visit) > 0:
-                #print("len to visit",len(to_visit))
                 current = to_visit.pop()
                 remaining = remaining - current.action if current.action != None else remaining
                 
