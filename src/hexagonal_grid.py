@@ -46,7 +46,7 @@ class HexagonalGrid(metaclass=abc.ABCMeta):
         self.cells = {}
     
     def generate_neighbours(self):
-        cells = self.get_cells().values()
+        cells = self.get_cells()
         for cell in cells:
             neighbour_coordinates = self.get_neighbouring_indecies(cell.get_row(), cell.get_column())
             for coordinate in neighbour_coordinates:
@@ -71,7 +71,7 @@ class HexagonalGrid(metaclass=abc.ABCMeta):
                 return cell
         """
     def get_cells(self) -> List[Cell]:
-        return self.cells
+        return self.cells.values()
 
     @abc.abstractclassmethod
     def get_neighbouring_indecies(self, row: int, column: int):
