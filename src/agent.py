@@ -34,7 +34,9 @@ class Agent:
         
         return replay_buffer
 
-    def train_agent(self, env: Hex, n_episodes:int, n_simulations: int, epochs=1, M=1):
+    def train_agent(self, env: Hex, n_episodes:int, n_simulations: int, epochs=1, M=1, file_name=''):
+        file_name = 'models/' + file_name
+
         replay_buffer = []
         epsilon_decay_factor = (self.actor.epsilon - self.actor.end_epsilon)/n_episodes
         save_model_interval = math.floor(n_episodes/M)
@@ -52,7 +54,7 @@ class Agent:
 
             # Save model to file
             if (i+1) % save_model_interval == 0:
-                self.actor.model.save('fourth_ex_model_{}.h5'.format(i+1))
+                self.actor.model.save(file_name+str(i+1)+'.h5')
 
     def plot_distribution(self, distribution):
         print(distribution)
