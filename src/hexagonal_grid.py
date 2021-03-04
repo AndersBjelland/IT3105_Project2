@@ -36,13 +36,17 @@ class Cell:
     def get_piece(self) -> int:
         return self.piece
 
+    def __hash__(self):
+        return hash((self.row, self.column))
+
+
 class HexagonalGrid(metaclass=abc.ABCMeta):
 
     def __init__(self, size: Tuple[int,int]):
-        self.cells = []
+        self.cells = {}
     
     def generate_neighbours(self):
-        cells = self.get_cells()
+        cells = self.get_cells().values()
         for cell in cells:
             neighbour_coordinates = self.get_neighbouring_indecies(cell.get_row(), cell.get_column())
             for coordinate in neighbour_coordinates:
@@ -56,11 +60,16 @@ class HexagonalGrid(metaclass=abc.ABCMeta):
                     neighbour.add_neighbour(cell)     
       
     def get_cell(self, row: int, column: int) -> Cell:
+        try:
+            return self.cells[hash((row,column))]
+        except KeyError:
+            return None
+        """
         cells = self.get_cells()
         for cell in cells:
             if cell.get_row() == row and cell.get_column() == column:
                 return cell
-
+        """
     def get_cells(self) -> List[Cell]:
         return self.cells
 
@@ -91,7 +100,8 @@ class Diamond(HexagonalGrid):
         n_columns = size[1]
         for row in range(n_rows):
             for column in range(n_columns):
-                self.cells.append(Cell(row, column))
+                cell = Cell(row, column)
+                self.cells[cell.__hash__()] = cell
         self.generate_neighbours()
     
     def get_neighbouring_indecies(self, row: int, column: int) -> List[Tuple[int,int]]:
