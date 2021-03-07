@@ -203,7 +203,10 @@ class HexEncoder(Encoder):
         carrier_point1_cell = env.get_board().get_cell(carrier_point1[0], carrier_point1[1])
         carrier_point2_cell = env.get_board().get_cell(carrier_point2[0], carrier_point2[1])
         if carrier_point1_cell == None:
-            print(carrier_point1, flush=True)
+            print("point:", (row, column), flush=True)
+            print("bridge: ", (row, column), flush=True)
+            
+            print("Carrier", carrier_point1, flush=True)
 
         carrier_point1_piece = carrier_point1_cell.get_piece() 
         carrier_point2_piece = env.get_board().get_cell(carrier_point2[0], carrier_point2[1]).get_piece()
