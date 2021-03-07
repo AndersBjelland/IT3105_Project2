@@ -204,7 +204,7 @@ class HexEncoder(Encoder):
         carrier_point2_cell = env.get_board().get_cell(carrier_point2[0], carrier_point2[1])
         if carrier_point1_cell == None:
             print("point:", (row, column), flush=True)
-            print("bridge: ", (row, column), flush=True)
+            print("bridge: ", (bridge_row, bridge_column), flush=True)
             
             print("Carrier", carrier_point1, flush=True)
 
