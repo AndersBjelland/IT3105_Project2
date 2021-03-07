@@ -53,7 +53,7 @@ class Agent:
 
             # Save model to file
             if (i+1) % save_model_interval == 0:
-                self.actor.model.save(file_name+str(i+1)+'.h5')
+                self.actor.model.save(file_path+str(i+1)+'.h5')
 
     def plot_distribution(self, distribution):
         print(distribution)
