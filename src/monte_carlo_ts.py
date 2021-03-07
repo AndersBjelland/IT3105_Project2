@@ -142,12 +142,10 @@ class MCTS():
             self.root = child
             self.env.make_action(action)
             self.org_env = self.env.copy()
-            self.org_env.display_board()
         else:
             self.env.make_action(action)
             current_player = self.env.get_current_player()
             self.org_env = self.env.copy()
-            self.org_env.display_board()
             
             self.root = Node(current_player=current_player)
 
