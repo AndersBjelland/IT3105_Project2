@@ -34,8 +34,7 @@ class Agent:
         
         return replay_buffer
 
-    def train_agent(self, env: Hex, n_episodes:int, n_simulations: int, epochs=1, M=1, file_name=''):
-        file_name = 'models/' + file_name
+    def train_agent(self, env: Hex, n_episodes:int, n_simulations: int, epochs=1, M=1, file_path=''):
 
         replay_buffer = []
         epsilon_decay_factor = (self.actor.epsilon - self.actor.end_epsilon)/n_episodes
