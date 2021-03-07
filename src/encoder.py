@@ -198,10 +198,12 @@ class HexEncoder(Encoder):
 
     def _process_save_endpoint(self, feat, bridge_row: int, bridge_column: int, row: int, column: int, piece_owner: int, env: Hex) -> List[List[int]]:
         carrier_point1, carrier_point2 = self.get_carrier_points((row, column), (bridge_row, bridge_column))
-        print("------------", flush=True)
+        
         
         carrier_point1_cell = env.get_board().get_cell(carrier_point1[0], carrier_point1[1])
         carrier_point2_cell = env.get_board().get_cell(carrier_point2[0], carrier_point2[1])
+        if carrier_point1_cell == None:
+            print(carrier_point1)
 
         carrier_point1_piece = carrier_point1_cell.get_piece() 
         carrier_point2_piece = env.get_board().get_cell(carrier_point2[0], carrier_point2[1]).get_piece()
