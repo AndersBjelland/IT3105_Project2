@@ -37,7 +37,7 @@ class Cell:
         return self.piece
 
     def __hash__(self):
-        return hash((self.row, self.column))
+        return (self.row, self.column)
 
 
 class HexagonalGrid(metaclass=abc.ABCMeta):
@@ -61,7 +61,7 @@ class HexagonalGrid(metaclass=abc.ABCMeta):
       
     def get_cell(self, row: int, column: int) -> Cell:
         try:
-            return self.cells[hash((row,column))]
+            return self.cells[(row,column)]
         except KeyError:
             return None
         """
