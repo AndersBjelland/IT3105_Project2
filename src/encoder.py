@@ -2,7 +2,6 @@ from .hex import Hex
 import abc
 import numpy as np
 import tensorflow as tf
-"test"
 
 from typing import List, Tuple
 
