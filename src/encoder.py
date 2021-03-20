@@ -7,53 +7,13 @@ from typing import List, Tuple
 
 class Encoder(metaclass = abc.ABCMeta):
 
+    def __init__(self, padding = 0):
+        self.padding = padding
+    
     @abc.abstractclassmethod
     def encode(self, piece_owner):
         pass
-
-
-class HexEncoder(Encoder):
-
-    def __init__(self, padding = 0):
-        self.padding = padding
-
-
-    def encode(self, env: Hex) -> 'tensor':
-        """
-        Returns a tensor that will serve as one feature/encoding of a Hex board. 
-        The dimension of the tensor will be (1, row_size, column_size, n_planes)
-
-        The padding parrameters specifies how much the planes will be padded.
-        
-        """
-        padding = self.padding
-        # Alter the environment according to the padding parameter.
-        # We add 'padding' layers of cells outside the current board and set the owner of those cells
-        # according to the player that owns that side.
-        env = self.create_padded_env(env=env, padding=padding)
-
-        blue = self.player_stones_encoding(1, env=env)
-        red = self.player_stones_encoding(2, env=env)
-        empty = self.player_stones_encoding(0, env=env)
-
-        blue_bridge = self.bridge_encoding(1, plane_type='endpoints', env=env)
-        red_bridge = self.bridge_encoding(2, plane_type='endpoints', env=env)
-
-        to_play_blue = self.to_play_endocing(1, env=env)
-        to_play_red = self.to_play_endocing(2, env=env)
-
-        to_play_save_bridge = self.bridge_encoding(env.current_player, plane_type='save', env=env)
-        to_play_form_bridge = self.bridge_encoding(env.current_player, plane_type='form', env=env)
-
-        planes = [blue, red, empty, blue_bridge, red_bridge, to_play_blue, to_play_red, to_play_save_bridge, to_play_form_bridge]
-        # Create new axis in all planes
-        for i in range(len(planes)):
-            planes[i] = np.expand_dims(planes[i], axis=2)
-
-        feat = np.concatenate(planes, axis=2).astype(float)
-        feat = np.expand_dims(feat, axis=0)
-        # Return as tensor
-        return tf.convert_to_tensor(feat)
+    
 
     def create_padded_env(self, env: Hex, padding:int) -> 'env':
         if padding < 1:
@@ -81,7 +41,7 @@ class HexEncoder(Encoder):
             for coordinate in NW + SE:
                 new_env.set_piece(coordinate, 1)
 
-        return new_env  
+        return new_env 
 
     def get_bridge_end_points(self, row: int, column: int) -> List[Tuple[int, int]]:
         return [(row-2, column+1), (row-1, column+2), 
@@ -215,6 +175,81 @@ class HexEncoder(Encoder):
 
         return feat
     
+
+
+class SimpleHexEncoder(Encoder):
+    
+    def encode(self, env: Hex) -> 'tensor':
+        """
+        Returns a tensor that will serve as one feature/encoding of a Hex board. 
+        The dimension of the tensor will be (1, row_size, column_size, n_planes)
+
+        The padding parrameters specifies how much the planes will be padded.
+        
+        """
+
+        padding = self.padding
+
+        env = self.create_padded_env(env=env, padding=padding)
+
+        blue = self.player_stones_encoding(1, env=env)
+        red = self.player_stones_encoding(2, env=env)
+        empty = self.player_stones_encoding(0, env=env)
+
+        to_play_blue = self.to_play_endocing(1, env=env)
+        to_play_red = self.to_play_endocing(2, env=env)
+
+        planes = [blue, red, empty, to_play_blue, to_play_red]
+
+        # Create new axis in all planes
+        for i in range(len(planes)):
+            planes[i] = np.expand_dims(planes[i], axis=2)
+
+        feat = np.concatenate(planes, axis=2).astype(float)
+        feat = np.expand_dims(feat, axis=0)
+        # Return as tensor
+        return tf.convert_to_tensor(feat)
+
+    
+
+class HexEncoder(Encoder):
+
+    def encode(self, env: Hex) -> 'tensor':
+        """
+        Returns a tensor that will serve as one feature/encoding of a Hex board. 
+        The dimension of the tensor will be (1, row_size, column_size, n_planes)
+
+        The padding parrameters specifies how much the planes will be padded.
+        
+        """
+        padding = self.padding
+        # Alter the environment according to the padding parameter.
+        # We add 'padding' layers of cells outside the current board and set the owner of those cells
+        # according to the player that owns that side.
+        env = self.create_padded_env(env=env, padding=padding)
+
+        blue = self.player_stones_encoding(1, env=env)
+        red = self.player_stones_encoding(2, env=env)
+        empty = self.player_stones_encoding(0, env=env)
+
+        blue_bridge = self.bridge_encoding(1, plane_type='endpoints', env=env)
+        red_bridge = self.bridge_encoding(2, plane_type='endpoints', env=env)
+
+        to_play_blue = self.to_play_endocing(1, env=env)
+        to_play_red = self.to_play_endocing(2, env=env)
+
+        to_play_save_bridge = self.bridge_encoding(env.current_player, plane_type='save', env=env)
+        to_play_form_bridge = self.bridge_encoding(env.current_player, plane_type='form', env=env)
+
+        planes = [blue, red, empty, blue_bridge, red_bridge, to_play_blue, to_play_red, to_play_save_bridge, to_play_form_bridge]
+        # Create new axis in all planes
+        for i in range(len(planes)):
+            planes[i] = np.expand_dims(planes[i], axis=2)
+
+        feat = np.concatenate(planes, axis=2).astype(float)
+        feat = np.expand_dims(feat, axis=0)
+        # Return as tensor
+        return tf.convert_to_tensor(feat)
     
     
 
