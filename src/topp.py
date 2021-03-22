@@ -4,7 +4,7 @@ from .hex import Hex
 import random
 
 
-class Topp:
+class Topp():
 
     def __init__(self, agents, env, number_of_games=10):
         self.agents = agents
@@ -29,7 +29,7 @@ class Topp:
 
         for _ in range(self.number_of_games):
             # randomly shuffle to vary who starts
-            players = [[agent1, agent2]]
+            players = [agent1, agent2]
             random.shuffle(players)
             player1 = players[0]
             player2 = players[1]
@@ -44,7 +44,7 @@ class Topp:
     def topp(self):
         winner_scores = {agent:0 for agent in self.agents}
         for player1 in range(len(self.agents)):
-            for player2 in range(len(self.agents)):
+            for player2 in range(player1+1, len(self.agents)):
                 agent1 = self.agents[player1]
                 agent2 = self.agents[player2]
                 result = self.play_games(agent1, agent2, self.env)
