@@ -7,5 +7,6 @@ from .monte_carlo_ts import *
 from .encoder import *
 from .actor import *
 from .agent import *
+from .topp import *
 
 
