@@ -265,7 +265,7 @@ class Hex(Environment):
     def get_angle(self):
         return 5*np.pi/4
 
-    def display_board(self, pace = 0.3, ax=None, distribution=None):
+    def display_board(self, pace = 0.1, ax=None, distribution=None):
         angle = 5*np.pi/4
         G = self.get_networkx_graph()
         # Rotate the position of the nodes
@@ -279,7 +279,7 @@ class Hex(Environment):
             node_color = [distribution[location] if location in distribution else 0 for location in G.nodes()]
             vmax = max(node_color)*1.2
             vmin = min(list(distribution.values()))/2
-            nx.draw(G, ax=ax, with_labels=True, node_size=1000, pos=pos, node_color=node_color, cmap=c_map, edge_color=edge_color, width=edge_weights, vmax=vmax, vmin=vmin)
+            nx.draw(G, ax=ax, with_labels=True, node_size=800, pos=pos, node_color=node_color, cmap=c_map, edge_color=edge_color, width=edge_weights, vmax=vmax, vmin=vmin, node_shape='h')
         else:
-            nx.draw(G, ax=ax, with_labels=True, node_size=1000, pos=pos, node_color=c_map, edge_color=edge_color, width=edge_weights)
+            nx.draw(G, ax=ax, with_labels=True, node_size=800, pos=pos, node_color=c_map, edge_color=edge_color, width=edge_weights, node_shape='h')
         plt.pause(pace)
