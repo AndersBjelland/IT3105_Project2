@@ -57,7 +57,7 @@ class Actor:
             self.model.compile(optimizer=opt(lr=self.learning_rate), loss=loss, metrics=['accuracy'])
 
     def get_action(self, env):
-        feature_maps = self.encoder.encode(env)
+        feature_maps = env.encoder.get_encoding()
 
         prob_dist = self.model(feature_maps).numpy().reshape((-1,))
 
@@ -90,8 +90,8 @@ class Actor:
         Takes in a probability distribution over available actions in env
 
         Returns:
-        Transfered to a vector with lenght equal to the maximal number of availablre actions in env, i.e. when env is empty.
-        Probability for actions not availablre are set to zero.
+        Transfered to a vector with length equal to the maximal number of available actions in env, i.e. when env is empty.
+        Probability for actions not available are set to zero.
         """
         env, dist = state_dist_pair[0], state_dist_pair[1]
        
