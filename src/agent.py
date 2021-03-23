@@ -5,6 +5,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 from copy import deepcopy
+import random
+
 import math
 
 
@@ -13,7 +15,7 @@ class Agent:
     def __init__(self, actor: Actor):
         self.actor = actor
         
-    def run_episode(self, env: Hex, n_simulations: int):
+    def run_episode(self, env: Hex, n_simulations: int, action_strategy='probabilistic'):
         
         mcts = MCTS(self.actor, env=env)
         replay_buffer = []
@@ -21,8 +23,11 @@ class Agent:
         while env.get_winner() == 0:
             distribution = mcts.search(n_simulations=n_simulations)
             
-            # Choose action greedily
-            action = max(distribution, key=distribution.get)
+            if action_strategy == 'greedy':
+                # Choose action greedily
+                action = max(distribution, key=distribution.get)
+            elif action_strategy == 'probabilistic':
+                action = random.choices(list(distribution.keys()), weights=list(distribution.values()), k=1)[0]
             
             replay_buffer.append((env.copy(), distribution))
             
