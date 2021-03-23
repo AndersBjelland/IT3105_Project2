@@ -288,6 +288,7 @@ class HexEncoder(Encoder):
 
         
         self.encoding = self.convert_planes_to_tensor(planes)
+        return self.encoding
 
 
     def update_encoding(self, coordinate: Tuple[int, int], env: Hex):
