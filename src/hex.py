@@ -220,16 +220,25 @@ class Hex(Environment):
 
     ######### Visualization methods ##############
 
-    def get_node_colors(self, G: "Graph") -> "ColorMap":
+    def get_node_colors(self, G: "Graph", distribution=None) -> "ColorMap":
+        color_map = plt.cm.get_cmap('YlGn')
         c_map = []
+        
+        if distribution:
+            node_color = {location:distribution[location] if location in distribution else 0 for location in G.nodes()}
+            vmax = max(node_color.values())*1.2
+            vmin = min(list(distribution.values()))/2
+        
         for location in G.nodes():
             piece = self.get_board().get_cell(location[0], location[1]).get_piece()
             if piece == EMPTY:
-                c_map.append('gray')
+                color = 'gray' if not distribution else color_map((node_color[location] - vmin)/vmax)
+                c_map.append(color)
             elif piece == RED:
                 c_map.append('red')
             elif piece == BLUE:
                 c_map.append('blue')
+        
         return c_map
 
     def get_edge_colors(self, G: "Graph") -> "ColorMap":
@@ -271,15 +280,9 @@ class Hex(Environment):
         # Rotate the position of the nodes
         pos = rotate(G, angle)
         # create color map according to whether the cells are empty or not
-        c_map = plt.cm.get_cmap('YlOrRd') if distribution else self.get_node_colors(G)
+        c_map = self.get_node_colors(G, distribution=distribution)
         edge_color = self.get_edge_colors(G)
         edge_weights = [G[u][v]['weight'] for u,v in G.edges()]
         # Display the board
-        if distribution:
-            node_color = [distribution[location] if location in distribution else 0 for location in G.nodes()]
-            vmax = max(node_color)*1.2
-            vmin = min(list(distribution.values()))/2
-            nx.draw(G, ax=ax, with_labels=True, node_size=800, pos=pos, node_color=node_color, cmap=c_map, edge_color=edge_color, width=edge_weights, vmax=vmax, vmin=vmin, node_shape='h')
-        else:
-            nx.draw(G, ax=ax, with_labels=True, node_size=800, pos=pos, node_color=c_map, edge_color=edge_color, width=edge_weights, node_shape='h')
+        nx.draw(G, ax=ax, with_labels=True, node_size=1000, pos=pos, node_color=c_map, edge_color=edge_color, width=edge_weights, node_shape='h')
         plt.pause(pace)

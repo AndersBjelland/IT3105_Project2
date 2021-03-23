@@ -157,7 +157,7 @@ class MCTS():
         self._back_prop(expanded_node, value)
         
 
-    def search(self, n_simulations: int, exploration_bonus='uct', c=1, update_rate = 10, ax1 = None, ax2=None, plotting=False) -> Dict['action','prob']:
+    def search(self, n_simulations: int, exploration_bonus='uct', c=1, update_rate = 10, ax=None, plotting=False) -> Dict['action','prob']:
         if exploration_bonus=='uct':
             self.exploration_bonus = lambda s,a: self._utc(s,a,c)
         else:
@@ -167,15 +167,15 @@ class MCTS():
             self.perform_simulation()
 
             if (_+1) % update_rate == 0 and plotting:
-                ax1.clear()
-                ax2.clear()
+                ax.clear()
+                
                 distribution = {child.action : child.traverse_count for child in self.root.get_children()}
                 factor = 1/sum(distribution.values())
                 distribution = {action : v*factor for action, v in distribution.items()}
-                env = self.env.copy()
-                env.reset()
-                env.display_board(ax=ax1, distribution=distribution)
-                ax2.bar([str(action) for action in distribution.keys()],list(distribution.values()))
+                #env = self.env.copy()
+                #env.reset()
+                self.env.display_board(ax=ax, distribution=distribution)
+                #ax2.bar([str(action) for action in distribution.keys()],list(distribution.values()))
                 plt.draw()
                 plt.pause(1)
         

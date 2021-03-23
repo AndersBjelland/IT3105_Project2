@@ -13,7 +13,6 @@ class Encoder(metaclass = abc.ABCMeta):
     @abc.abstractclassmethod
     def encode(self, piece_owner):
         pass
-    
 
     def create_padded_env(self, env: Hex, padding:int) -> 'env':
         if padding < 1:
@@ -252,5 +251,21 @@ class HexEncoder(Encoder):
         return tf.convert_to_tensor(feat)
     
     
+class DemoEncoder(Encoder):
 
-    
+    def encode(self, env: Hex):
+        player = env.get_current_player()
+        encoding = []
+        for cell in env.get_board().get_cells():
+            piece = cell.get_piece() 
+            if piece == player:
+                one_hot = [1,1]
+            elif piece == 0:
+                one_hot = [0,0]
+            else:
+                one_hot = [1,0]
+            encoding += one_hot
+
+        encoding = np.array(encoding)
+        encoding = np.expand_dims(encoding, axis=0)
+        return tf.convert_to_tensor(encoding)
