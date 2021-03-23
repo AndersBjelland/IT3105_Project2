@@ -172,10 +172,8 @@ class MCTS():
                 distribution = {child.action : child.traverse_count for child in self.root.get_children()}
                 factor = 1/sum(distribution.values())
                 distribution = {action : v*factor for action, v in distribution.items()}
-                #env = self.env.copy()
-                #env.reset()
                 self.env.display_board(ax=ax, distribution=distribution)
-                #ax2.bar([str(action) for action in distribution.keys()],list(distribution.values()))
+                
                 plt.draw()
                 plt.pause(1)
         
