@@ -15,6 +15,13 @@ class Encoder(metaclass = abc.ABCMeta):
     def encode(self, env: Hex):
         pass
 
+    @abc.abstractclassmethod
+    def update_encoding(self, coordinate:Tuple[int, int], env:Hex):
+        pass
+
+    def coordinate_scaler(self, x):
+        return x[0] + self.padding, x[1] + self.padding
+
     def get_encoding(self):
         if self.encoding is not None:
             return self.encoding
@@ -182,6 +189,16 @@ class Encoder(metaclass = abc.ABCMeta):
             feat[carrier_point2[0]][carrier_point2[1]] += 0
 
         return feat
+
+    def convert_planes_to_tensor(self, planes) -> np.ndarray:
+        # Create new axis in all planes
+        for i in range(len(planes)):
+            planes[i] = np.expand_dims(planes[i], axis=2)
+
+        feat = np.concatenate(planes, axis=2).astype(float)
+        feat = np.expand_dims(feat, axis=0)
+        # convert to tensor
+        return tf.convert_to_tensor(feat)
     
 
 
@@ -271,8 +288,6 @@ class HexEncoder(Encoder):
         
         self.encoding = self.convert_planes_to_tensor(planes)
 
-    def coordinate_scaler(self, x):
-        return x[0] + self.padding, x[1] + self.padding
 
     def update_encoding(self, coordinate: Tuple[int, int], env: Hex):
 
@@ -309,16 +324,6 @@ class HexEncoder(Encoder):
         
         self.encoding = self.convert_planes_to_tensor(planes)
 
-    def convert_planes_to_tensor(self, planes) -> np.ndarray:
-        # Create new axis in all planes
-        for i in range(len(planes)):
-            planes[i] = np.expand_dims(planes[i], axis=2)
-
-        feat = np.concatenate(planes, axis=2).astype(float)
-        feat = np.expand_dims(feat, axis=0)
-        # convert to tensor
-        return tf.convert_to_tensor(feat)
-
     def update_player_stones(self, piece_owner:int, plane:np.array, coordinate:Tuple[int,int], env:Hex):
         piece_value = env.get_board().get_cell(coordinate[0], coordinate[1]).get_piece()
         if piece_value == piece_owner:
@@ -347,4 +352,7 @@ class DemoEncoder(Encoder):
 
         encoding = np.array(encoding)
         encoding = np.expand_dims(encoding, axis=0)
-        return tf.convert_to_tensor(encoding)
+        self.encoding =  tf.convert_to_tensor(encoding)
+
+    def update_encoding(self, coordinate, env):
+        self.encode(env)
