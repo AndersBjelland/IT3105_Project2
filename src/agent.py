@@ -51,6 +51,7 @@ class Agent:
             replay_buffer = self.run_episode(env=env, n_simulations=n_simulations) + replay_buffer
             # Only keep the last 5000 steps
             replay_buffer = replay_buffer[:50000]
+            print(len(replay_buffer))
             # Train network
             self.actor.end_of_episode(replay_buffer, epochs=epochs)
             # Update epsilon
