@@ -73,13 +73,13 @@ class Hex(Environment):
     # We include an encoder to efficiently update the encoding of the game state when moves are made
     def set_encoder(self, encoder):
         self.encoder = encoder
-        encoder.encode(self)
+        if encoder is not None:
+            encoder.encode(self)
 
     def reset(self):
         for cell in self.get_board().get_cells():
             cell.set_piece(EMPTY)
         self.encoder.encode(self)
-        
 
     def copy(self) -> 'Hex':
         new_hex = Hex(self.size, self.current_player)
