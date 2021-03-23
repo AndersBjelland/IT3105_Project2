@@ -1,6 +1,6 @@
 
 class Node():
-    def __init__(self, current_player: int, parent=None, action=None):
+    def __init__(self, current_player: int, env:'env', parent=None, action=None):
         """
         action is the action taken by the parent to get to this node
         """
@@ -9,6 +9,7 @@ class Node():
         self.children = []
         self.q_values = {} # {action:q_value}
         self.set_depth()
+        self.env = env
         
         # Number of times the edge from parent to this node has been traversed, 
         # for the root this can be interpreted as number of times traversed into the tree

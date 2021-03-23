@@ -49,7 +49,7 @@ class MCTS():
         self.target_policy = target_policy
         self.env = env.copy()
         self.org_env = env.copy()
-        self.root = Node(current_player=self.env.get_current_player())
+        self.root = Node(current_player=self.env.get_current_player(), env=self.env, parent=None, action=None)
         
 
     def _traverse_to_leaf(self) -> Node:
@@ -58,32 +58,31 @@ class MCTS():
             
             # Use the policy to get the next node and set it to current
             current = self.tree_policy(current)
-            self.env.make_action(current.action)
+            #self.env.make_action(current.action)
         
         return current
 
     def _expand(self, node: Node) -> Node: 
         # Check if the node represents a final state
-        if self.env.get_winner():
+        if node.env.get_winner():
             return node
 
         # Get actions that are not yet taken from the node we expand
-        actions = [action for action in self.env.available_actions() if node.get_child(action) is None]
+        actions = [action for action in node.env.available_actions() if node.get_child(action) is None]
         action = random.choice(actions)
-        self.env.make_action(action)
-       
+        env = node.env.copy()
+        env.make_action(action)
 
-        return Node(current_player = self.env.get_current_player(),parent=node, action=action)
+        return Node(current_player = env.get_current_player(), env=env, parent=node, action=action)
 
     def _rollout(self, node: Node) -> int:
-        player = self.env.get_current_player()
+        player = node.env.get_current_player()
+        env_copy = node.env.copy()
+        while not env_copy.get_winner():
+            action = self.target_policy.get_action(env_copy)
+            env_copy.make_action(action)
         
-        while not self.env.get_winner():
-            action = self.target_policy.get_action(self.env)
-            self.env.make_action(action)
-        
-        winner = self.env.get_winner()
-        self.env = self.org_env.copy()
+        winner = env_copy.get_winner()
         return 1 if player == winner else -1
             
 
@@ -111,7 +110,7 @@ class MCTS():
         We know that for a k x k board there are k x k - d available moves for a node at depth d.
         We therefore check if there are k x k - d children, if it is not we are at a leaf node.
         """
-        available_actions = self.env.available_actions()
+        available_actions = node.env.available_actions()
 
         # If there are available actions and the number of children equals the number of available actions we can conclude that it is not a leaf node
         if len(available_actions) > 0 and len(available_actions) == len(node.get_children()):
@@ -140,14 +139,14 @@ class MCTS():
         child = self.root.get_child(action)
         if child:
             self.root = child
-            self.env.make_action(action)
-            self.org_env = self.env.copy()
+            #self.env.make_action(action)
+            #self.org_env = self.env.copy()
         else:
-            self.env.make_action(action)
-            current_player = self.env.get_current_player()
-            self.org_env = self.env.copy()
+            env_copy = self.root.env.copy()
+            env_copy.make_action(action)
+            current_player = env_copy.get_current_player()
             
-            self.root = Node(current_player=current_player)
+            self.root = Node(current_player=current_player, env=env_copy, parent=self.root, action=action)
 
     def perform_simulation(self):
 
@@ -172,10 +171,10 @@ class MCTS():
                 distribution = {child.action : child.traverse_count for child in self.root.get_children()}
                 factor = 1/sum(distribution.values())
                 distribution = {action : v*factor for action, v in distribution.items()}
-                self.env.display_board(ax=ax, distribution=distribution)
+                self.root.env.display_board(ax=ax, distribution=distribution)
                 
                 plt.draw()
-                plt.pause(1)
+                plt.pause(0.5)
         
         distribution = {child.action : child.traverse_count for child in self.root.get_children()}
         factor = 1/sum(distribution.values())
