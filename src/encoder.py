@@ -234,6 +234,7 @@ class SimpleHexEncoder(Encoder):
         feat = np.expand_dims(feat, axis=0)
         # convert to tensor
         self.encoding = tf.convert_to_tensor(feat)
+        return self.encoding
 
     
 
@@ -353,6 +354,7 @@ class DemoEncoder(Encoder):
         encoding = np.array(encoding)
         encoding = np.expand_dims(encoding, axis=0)
         self.encoding =  tf.convert_to_tensor(encoding)
+        return self.encoding
 
     def update_encoding(self, coordinate, env):
         self.encode(env)
