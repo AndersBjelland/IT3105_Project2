@@ -67,16 +67,26 @@ class Hex(Environment):
         # Initialize the board as empty
         for cell in self.get_board().get_cells():
             cell.set_piece(EMPTY)
+        
+        self.encoder = None
+
+    # We include an encoder to efficiently update the encoding of the game state when moves are made
+    def set_encoder(self, encoder):
+        self.encoder = encoder
+        encoder.encode(self)
 
     def reset(self):
         for cell in self.get_board().get_cells():
             cell.set_piece(EMPTY)
+        self.encoder.encode(self)
+        
 
     def copy(self) -> 'Hex':
         new_hex = Hex(self.size, self.current_player)
         for cell in self.get_board().get_cells():
             equivalent_cell = new_hex.get_board().get_cell(cell.get_row(), cell.get_column())
             equivalent_cell.set_piece(cell.get_piece())
+        new_hex.set_encoder(self.encoder)
         return new_hex
 
     def get_current_player(self) -> int:
@@ -97,6 +107,7 @@ class Hex(Environment):
             raise ValueError("Action cannot be made because {} is not empty".format(coordinate))
         cell.set_piece(self.current_player)
         self.current_player = BLUE if self.current_player == RED else RED
+        self.encoder.update_encoding(coordinate, self)
     
 
     def get_NW_coordinates(self, layer=0) -> Tuple[Tuple[int,int]]:
