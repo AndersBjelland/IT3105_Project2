@@ -44,7 +44,7 @@ class Agent:
         replay_buffer = []
         epsilon_decay_factor = (self.actor.epsilon - self.actor.end_epsilon)/n_episodes
         save_model_interval = math.floor(n_episodes/M)
-        
+        print("heeeeeeei", flush=True)
 
         for i in tqdm(range(n_episodes)):
             # Add new training examples to the replay buffer
