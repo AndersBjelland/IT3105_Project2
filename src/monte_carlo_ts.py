@@ -89,15 +89,19 @@ class MCTS():
         
         players = [node.env.get_current_player() for node in nodes]
         env_copies = [node.env.copy() for node in nodes]
-        winner = np.array([0 for _ in range(len(nodes))])
+        winners = np.array([env.get_winner() for env in env_copies])
 
-        while np.all(winner>0) > 0:
-            actions = self.target_policy.get_actions(env_copies)
-            winners = [env.get_winner() for env in env_copies]
-            for i, env in enumerate(env_copies):
-                if winners[i] == 0:
-                    env.make_action(actions(i))
-        return [1 if players[i] == winner[i] else -1 for i in range(len(env_copies))]
+        #print('---------------rollout_start---------------')
+        while np.any(winners == 0) > 0:
+            non_terminated_envs = [env for i, env in enumerate(env_copies) if winners[i] == 0]
+            actions = self.target_policy.get_actions(non_terminated_envs)
+            #print("winners status:", winners)
+            for i, env in enumerate(non_terminated_envs):
+                env.make_action(actions[i])
+                #env.display_board()
+            winners = np.array([env.get_winner() for env in env_copies])
+        #print("Winners: ", winners)
+        return [1 if players[i] == winners[i] else -1 for i in range(len(env_copies))]
         
             
 
@@ -145,7 +149,7 @@ class MCTS():
         Returns the next node in the search
         """
         available_actions = [child.action for child in node.get_children()]
-        q_and_u_values = {action : (node.q_values[action], self.exploration_bonus(node, action)) for action in available_actions}
+        q_and_u_values = {action : (node.q_values[action], self.exploration_bonus(node, action)) if action in node.q_values else (-100,-100) for action in available_actions}
         # return argmax q+u
         return node.get_child(max(q_and_u_values.keys(), key=lambda x : sum(q_and_u_values[x])))
         
@@ -177,18 +181,22 @@ class MCTS():
             expanded_nodes.append(expanded_node)
         
         values = self._rollout2(expanded_nodes)
+        
         for i,expanded_node in enumerate(expanded_nodes):
             self._back_prop(expanded_node, values[i])
         
 
-    def search(self, n_simulations: int, exploration_bonus='uct', c=1, rollout_batch_size=1, update_rate = 10, ax=None, plotting=False) -> Dict['action','prob']:
+    def search(self, n_simulations: int, exploration_bonus='uct', c=1, rollout_batch_size=1, update_rate = 10, ax=None, plotting=False, old=True) -> Dict['action','prob']:
         if exploration_bonus=='uct':
             self.exploration_bonus = lambda s,a: self._utc(s,a,c)
         else:
             raise ValueError("exploration_bonus must be one of 'utc' (got {})".format(exploration_bonus))
 
-        for _ in range(n_simulations):
-            self.perform_simulation_old()
+        for _ in range(int(n_simulations/rollout_batch_size)):
+            if old:
+                self.perform_simulation_old()
+            else:
+                self.perform_simulation(rollout_batch_size=rollout_batch_size)
 
             if (_+1) % update_rate == 0 and plotting:
                 ax.clear()
@@ -232,29 +240,45 @@ class MCTS():
         return G, edge_labels
 
     def visualize_tree_nim(self):
-            edge_labels = {}
-            G = nx.DiGraph()
-            to_visit = [self.root]
-            visited = []
-            remaining = self.env.n
-            while len(to_visit) > 0:
-                current = to_visit.pop()
-                remaining = remaining - current.action if current.action != None else remaining
-                
-                visited.append(current)
-                parent_node = (current.action, remaining, current.state_value, id(current))
-                G.add_node(parent_node)
-                
-                
-                for child in current.get_children():
-                    child_node = (child.action, remaining-child.action, child.state_value, id(child))
-                    
-                    G.add_edge(parent_node, child_node)
-                    edge_labels[(parent_node, child_node)] = (child.traverse_count, round(current.q_values[child.action],4))
+        unique_ids = []
+        edge_labels = {}
+        G = nx.DiGraph()
+        to_visit = [self.root]
+        visited = []
+
+        remaining = self.env.n
+        while len(to_visit) > 0:
+            current = to_visit.pop()
+            if (len(current.get_children()) == 0):
+                continue
+            remaining = remaining - current.action if current.action != None else remaining
+            if remaining < 0:
+                print("heehehe")
+            unique_ids.append(id(current))
+            visited.append(current)
+           
+            parent_node = None
+            for node in G.nodes():
+                if node[3] == id(current):
+                    parent_node = node
             
-                to_visit += current.get_children()
-                
-            return G, edge_labels
+            parent_node = (current.action, remaining, current.state_value, id(current), None) if parent_node == None else parent_node
+            G.add_node(parent_node)
+            
+            print("children: ", current.get_children())
+            for child in current.get_children():
+                print("er her")
+                if remaining - child.action < 0:
+                    print("child")
+                print("remianing- child.action", remaining - child.action)
+                child_node = (child.action, parent_node[1]-child.action, child.state_value, id(child), parent_node)
+                unique_ids.append(id(current))
+                G.add_edge(parent_node, child_node)
+                edge_labels[(parent_node, child_node)] = (child.traverse_count, round(current.q_values[child.action],4))
+        
+            to_visit += current.get_children()
+        print("unique labels: ", len(set(unique_ids)))
+        return G, edge_labels
 
 
 

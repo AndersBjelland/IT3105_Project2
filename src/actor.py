@@ -78,10 +78,22 @@ class Actor:
         prob_dists = self.model(feature_maps).numpy().reshape((len(envs),-1))
         prob_dists = {env:prob_dists[i] for i, env in enumerate(envs)}
         legal_moves = {env:env.available_actions_binary() for env in envs}
+       # print("len of legal moves:", len(legal_moves[envs[0]]))
         prob_dists = [{legal_moves[env][i][1]:prob_dists[env][i] for i in range(len(prob_dists[env])) if legal_moves[env][i][0]} for env in envs]
 
         actions = []
+        count = 0
         for prob_dist in prob_dists:
+            """ print("prob_dist: ", prob_dist)
+            print("len probdist: ", len(prob_dist))
+            print("count:", count)
+            print("---------")
+            
+            #envs[0].display_board()
+            print("This board has winner", envs[0].get_winner()) """
+            if len(prob_dist) == 0:
+                envs[prob_dists.index(prob_dist)].display_board()
+            count += 1
             action = random.choice(list(prob_dist.keys())) if random.random() <= self.epsilon else max(prob_dist, key=prob_dist.get)
             actions.append(action)
         return actions
