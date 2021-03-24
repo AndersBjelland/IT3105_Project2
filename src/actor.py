@@ -73,7 +73,18 @@ class Actor:
         
         return max(prob_dist, key=prob_dist.get)
         
-        
+    def get_actions(self, envs: List['env']) -> List[Tuple[int,int]]:
+        feature_maps = tf.concat([env.encoder.get_encoding() for env in envs], 0)
+        prob_dists = self.model(feature_maps).numpy().reshape((len(envs),-1))
+        prob_dists = {env:prob_dists[i] for i, env in enumerate(envs)}
+        legal_moves = {env:env.available_actions_binary() for env in envs}
+        prob_dists = [{legal_moves[env][i][1]:prob_dists[env][i] for i in range(len(prob_dists[env])) if legal_moves[env][i][0]} for env in envs]
+
+        actions = []
+        for prob_dist in prob_dists:
+            action = random.choice(list(prob_dist.keys())) if random.random() <= self.epsilon else max(prob_dist, key=prob_dist.get)
+            actions.append(action)
+        return actions
 
     def end_of_episode(self, replay_buffer, epochs=1, batch_size=128):
         x,y = self.convert_to_network_input(replay_buffer)

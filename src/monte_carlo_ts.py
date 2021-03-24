@@ -84,6 +84,21 @@ class MCTS():
         
         winner = env_copy.get_winner()
         return 1 if player == winner else -1
+
+    def _rollout2(self, nodes: List[Node]) -> List[int]:
+        
+        players = [node.env.get_current_player() for node in nodes]
+        env_copies = [node.env.copy() for node in nodes]
+        winner = np.array([0 for _ in range(len(nodes))])
+
+        while np.all(winner>0) > 0:
+            actions = self.target_policy.get_actions(env_copies)
+            winners = [env.get_winner() for env in env_copies]
+            for i, env in enumerate(env_copies):
+                if winners[i] == 0:
+                    env.make_action(actions(i))
+        return [1 if players[i] == winner[i] else -1 for i in range(len(env_copies))]
+        
             
 
     def _back_prop(self, node: Node, value: float):
@@ -148,22 +163,32 @@ class MCTS():
             
             self.root = Node(current_player=current_player, env=env_copy, parent=self.root, action=action)
 
-    def perform_simulation(self):
-
+    def perform_simulation_old(self):
         leaf_node = self._traverse_to_leaf()
         expanded_node = self._expand(leaf_node)
         value = self._rollout(expanded_node)
         self._back_prop(expanded_node, value)
+
+    def perform_simulation(self, rollout_batch_size:int):
+        expanded_nodes = []
+        for _ in range(rollout_batch_size):
+            leaf_node = self._traverse_to_leaf()
+            expanded_node = self._expand(leaf_node)
+            expanded_nodes.append(expanded_node)
+        
+        values = self._rollout2(expanded_nodes)
+        for i,expanded_node in enumerate(expanded_nodes):
+            self._back_prop(expanded_node, values[i])
         
 
-    def search(self, n_simulations: int, exploration_bonus='uct', c=1, update_rate = 10, ax=None, plotting=False) -> Dict['action','prob']:
+    def search(self, n_simulations: int, exploration_bonus='uct', c=1, rollout_batch_size=1, update_rate = 10, ax=None, plotting=False) -> Dict['action','prob']:
         if exploration_bonus=='uct':
             self.exploration_bonus = lambda s,a: self._utc(s,a,c)
         else:
             raise ValueError("exploration_bonus must be one of 'utc' (got {})".format(exploration_bonus))
 
         for _ in range(n_simulations):
-            self.perform_simulation()
+            self.perform_simulation_old()
 
             if (_+1) % update_rate == 0 and plotting:
                 ax.clear()
