@@ -59,7 +59,9 @@ class Agent:
             # Only keep the last 5000 steps
             replay_buffer = replay_buffer[:300]
             # Train network for actor and critic
+            print("--------------Actor training--------------")
             self.actor.end_of_episode(replay_buffer, epochs=epochs)
+            print("--------------Critic training-------------")
             self.critic.end_of_episode(replay_buffer, epochs=epochs)
             # Update epsilon
             self.actor.epsilon = self.actor.epsilon - epsilon_decay_factor*(i+1)
