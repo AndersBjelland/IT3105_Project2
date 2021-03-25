@@ -155,6 +155,7 @@ class MCTS():
         leaf_node = self._traverse_to_leaf()
         expanded_node = self._expand(leaf_node)
         value = self._rollout(expanded_node) if random.random() < rollout_prob else self.critic.get_value(self.env)
+        self.env = self.org_env
         self._back_prop(expanded_node, value)
         
 
