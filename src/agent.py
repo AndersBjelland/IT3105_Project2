@@ -56,8 +56,9 @@ class Agent:
             replay_buffer = self.run_episode(env=env, n_simulations=n_simulations, rollout_prob=rollout_prob) + replay_buffer
             # Only keep the last 5000 steps
             replay_buffer = replay_buffer[:300]
-            # Train network
+            # Train network for actor and critic
             self.actor.end_of_episode(replay_buffer, epochs=epochs)
+            self.critic.end_of_episode(replay_buffer, epochs=epochs)
             # Update epsilon
             self.actor.epsilon = self.actor.epsilon - epsilon_decay_factor*(i+1)
             # Reduce prob of rollout
