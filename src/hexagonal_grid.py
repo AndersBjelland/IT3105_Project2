@@ -48,10 +48,8 @@ class HexagonalGrid(metaclass=abc.ABCMeta):
         self.cells = np.zeros(size) if cells is None else np.copy(cells)
         self.coordinates = list(product([_ for _ in range(size[0])], [_ for _ in range(size[0])]))
         self.neighbours = {} if neighbours is None else neighbours # Dictionary on the format {(row, column): [neighbour coordinates...]}
-        #self.cells = {}
     
     def generate_neighbours(self):
-        
         for coordinate in self.get_cells():
             row, column = coordinate[0], coordinate[1]
             neighbour_coordinates = self.get_neighbouring_indecies(row, column)

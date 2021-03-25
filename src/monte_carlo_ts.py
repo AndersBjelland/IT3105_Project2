@@ -159,8 +159,6 @@ class MCTS():
         child = self.root.get_child(action)
         if child:
             self.root = child
-            #self.env.make_action(action)
-            #self.org_env = self.env.copy()
         else:
             env_copy = self.root.env.copy()
             env_copy.make_action(action)
