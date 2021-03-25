@@ -38,8 +38,8 @@ class Agent:
             mcts.set_new_root(action)
         # include a label in each element of the replay buffer with the outcome for critic training
         winner = env.get_winner()
-        for entry in replay_buffer:
-            entry += (winner,)
+        for i in range(len(replay_buffer)):
+            replay_buffer[i] += (winner,)
         
         # reset env
         env.reset()

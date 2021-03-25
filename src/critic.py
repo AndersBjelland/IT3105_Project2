@@ -65,6 +65,6 @@ class Critic:
 
     def convert_to_network_input(self, replay_buffer):
         x = tf.concat([self.encoder.encode(entry[0]) for entry in replay_buffer], 0)  
-        print("first replay: ", replay_buffer[0])      
+        print("first replay: ", len(replay_buffer[0]))      
         y = tf.convert_to_tensor([entry[2] for entry in replay_buffer])
         return x,y
