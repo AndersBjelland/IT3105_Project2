@@ -33,7 +33,7 @@ class Agent:
             
             replay_buffer.append((env.copy(), distribution))
             
-            #env.make_action(action)
+            env.make_action(action)
             
             mcts.set_new_root(action)
         
