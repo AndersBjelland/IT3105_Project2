@@ -1,4 +1,3 @@
-from .hexagonal_grid import *
 from .helpers import *
 from .hex import *
 from .nim import *
