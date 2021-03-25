@@ -31,7 +31,7 @@ class Agent:
             elif action_strategy == 'probabilistic':
                 action = random.choices(list(distribution.keys()), weights=list(distribution.values()), k=1)[0]
             
-            replay_buffer.append((env.copy(), distribution, None))
+            replay_buffer.append((env.copy(), distribution))
             
             env.make_action(action)
             
@@ -39,7 +39,7 @@ class Agent:
         # include a label in each element of the replay buffer with the outcome for critic training
         winner = env.get_winner()
         for entry in replay_buffer:
-            entry[2] = winner
+            entry += (winner,)
         
         # reset env
         env.reset()
