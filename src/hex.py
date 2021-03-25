@@ -1,4 +1,3 @@
-from .hexagonal_grid import Diamond, Cell
 from .helpers import rotate
 
 import numpy as np
