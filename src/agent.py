@@ -15,6 +15,7 @@ class Agent:
 
     def __init__(self, actor: Actor, critic: Critic):
         self.actor = actor
+        self.critic = critic
         
     def run_episode(self, env: Hex, n_simulations: int, rollout_prob:float, action_strategy='probabilistic'):
         
