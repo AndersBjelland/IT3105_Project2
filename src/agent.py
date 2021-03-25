@@ -15,13 +15,13 @@ class Agent:
     def __init__(self, actor: Actor):
         self.actor = actor
         
-    def run_episode(self, env: Hex, n_simulations: int, action_strategy='probabilistic'):
+    def run_episode(self, env: Hex, n_simulations: int, rollout_prob:float, action_strategy='probabilistic'):
         
         mcts = MCTS(self.actor, env=env)
         replay_buffer = []
 
         while env.get_winner() == 0:
-            distribution = mcts.search(n_simulations=n_simulations)
+            distribution = mcts.search(n_simulations=n_simulations, rollout_prob=rollout_prob)
             
             if action_strategy == 'greedy':
                 # Choose action greedily
@@ -29,35 +29,44 @@ class Agent:
             elif action_strategy == 'probabilistic':
                 action = random.choices(list(distribution.keys()), weights=list(distribution.values()), k=1)[0]
             
-            replay_buffer.append((env.copy(), distribution))
+            replay_buffer.append((env.copy(), distribution, None))
             
             env.make_action(action)
             
             mcts.set_new_root(action)
+        # include a label in each element of the replay buffer with the outcome for critic training
+        winner = env.get_winner()
+        for entry in replay_buffer:
+            entry[2] = winner
         
+        # reset env
         env.reset()
         
         return replay_buffer
 
-    def train_agent(self, env: Hex, n_episodes:int, n_simulations: int, epochs=1, M=1, file_path=''):
+    def train_agent(self, env: Hex, n_episodes:int, n_simulations: int, rollout_start_prob:float, rollout_end_prob:float, epochs=1, M=1, file_path=''):
 
         replay_buffer = []
         epsilon_decay_factor = (self.actor.epsilon - self.actor.end_epsilon)/n_episodes
         save_model_interval = math.floor(n_episodes/M)
-
+        rollout_prob = rollout_start_prob
+        reduction_factor = rollout_start_prob/n_episodes + rollout_end_prob
         for i in tqdm(range(n_episodes)):
             # Add new training examples to the replay buffer
-            replay_buffer = self.run_episode(env=env, n_simulations=n_simulations) + replay_buffer
+            replay_buffer = self.run_episode(env=env, n_simulations=n_simulations, rollout_prob=rollout_prob) + replay_buffer
             # Only keep the last 5000 steps
             replay_buffer = replay_buffer[:300]
             # Train network
             self.actor.end_of_episode(replay_buffer, epochs=epochs)
             # Update epsilon
             self.actor.epsilon = self.actor.epsilon - epsilon_decay_factor*(i+1)
+            # Reduce prob of rollout
+            rollout_prob -= reduction_factor
 
             # Save model to file
             if (i+1) % save_model_interval == 0:
                 self.actor.model.save(file_path+str(i+1)+'.h5')
+
 
     def plot_distribution(self, distribution):
         print(distribution)
