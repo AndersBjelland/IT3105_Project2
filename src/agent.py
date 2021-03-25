@@ -39,7 +39,7 @@ class Agent:
         # include a label in each element of the replay buffer with the outcome for critic training
         winner = env.get_winner()
         for i in range(len(replay_buffer)):
-            replay_buffer[i] += (winner,)
+            replay_buffer[i] += (1,) if replay_buffer[i][0].get_current_player() == winner else (-1,)
         
         # reset env
         env.reset()
