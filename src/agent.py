@@ -1,4 +1,5 @@
 from .actor import Actor
+from .critic import Critic
 from .monte_carlo_ts import MCTS
 from .hex import Hex
 import numpy as np
@@ -12,7 +13,7 @@ import math
 
 class Agent:
 
-    def __init__(self, actor: Actor):
+    def __init__(self, actor: Actor, critic: Critic):
         self.actor = actor
         
     def run_episode(self, env: Hex, n_simulations: int, rollout_prob:float, action_strategy='probabilistic'):
