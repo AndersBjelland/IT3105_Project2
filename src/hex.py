@@ -79,6 +79,7 @@ class Hex(Environment):
     def reset(self):
         for cell in self.get_board().get_cells():
             cell.set_piece(EMPTY)
+        self.current_player = self.start_player
         self.encoder.encode(self)
 
     def copy(self) -> 'Hex':
