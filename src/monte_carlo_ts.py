@@ -45,6 +45,7 @@ alternating maximizing and minimizing depending on which player that plays at ea
 class MCTS():
 
     def __init__(self, target_policy:'Actor', env: Hex):
+        print(env.encoder)
         self.exploration_bonus = None
         self.target_policy = target_policy
         self.env = env.copy()
@@ -279,16 +280,6 @@ class MCTS():
             to_visit += current.get_children()
         print("unique labels: ", len(set(unique_ids)))
         return G, edge_labels
-
-
-
-
-    
-
-
-
-        
-    
 
 
 

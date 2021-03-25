@@ -19,6 +19,10 @@ class Encoder(metaclass = abc.ABCMeta):
     def update_encoding(self, coordinate:Tuple[int, int], env:Hex):
         pass
 
+    @abc.abstractclassmethod
+    def copy(self):
+        pass
+
     def coordinate_scaler(self, x):
         return x[0] + self.padding, x[1] + self.padding
 
@@ -38,10 +42,9 @@ class Encoder(metaclass = abc.ABCMeta):
         new_env = Hex(new_size, env.start_player)
 
         # Iterate of cells in old env and set corresponding cells in new
-        for cell in env.get_board().get_cells():
-            coordinate = (cell.get_row(), cell.get_column())
+        for coordinate in env.get_coordinates():
             coordinate = coordinate_scaler(coordinate)
-            new_env.set_piece(coordinate, cell.get_piece())
+            new_env.set_piece(coordinate, env.value_of(coordinate))
 
         # Place stones in the added layers
         for layer in range(padding):
@@ -132,7 +135,7 @@ class Encoder(metaclass = abc.ABCMeta):
         return np.array(feat)     
 
     def _coordinate_bridge_encoding(self, piece_owner: int, row: int, column: int, env: Hex, plane_type: 'str', feat) -> np.ndarray:
-        piece = env.get_board().get_cell(row, column).get_piece()
+        piece = env.value_of((row, column))
                 
         # if the piece is not owned by the piece_owner we move to next
         if piece != piece_owner:
@@ -145,27 +148,27 @@ class Encoder(metaclass = abc.ABCMeta):
         for bridge_row, bridge_column in end_points:
             
             # Cell of the current endpoint
-            bridge_cell = env.get_board().get_cell(bridge_row, bridge_column)
+            bridge_cell_value = env.value_of((bridge_row, bridge_column))
             
             # If the bridge cell is None we know we are 'outside' the board
-            if bridge_cell is None:
+            if bridge_cell_value is None:
                 continue
 
             # Check scenarios
             # Process as a save point
             if plane_type == 'save':
                 # Check if the endpoint forms a bridge together with the current cell
-                if bridge_cell.get_piece() != piece_owner:
+                if bridge_cell_value != piece_owner:
                     continue
                 feat = self._process_save_endpoint(feat, bridge_row, bridge_column, row, column, piece_owner, env)
 
             # Process as a form point
             elif plane_type == 'form':
-                feat[bridge_row][bridge_column] = 1 if bridge_cell.get_piece() == 0 else 0
+                feat[bridge_row][bridge_column] = 1 if bridge_cell_value == 0 else 0
 
             # Process as an endpoint point
             elif plane_type == 'endpoints':
-                feat[bridge_row][bridge_column] = 1 if bridge_cell.get_piece() == piece_owner else 0
+                feat[bridge_row][bridge_column] = 1 if bridge_cell_value == piece_owner else 0
 
             else:
                 raise ValueError("plane_type must be one of 'save', 'form', 'endpoints' (got {})".format(plane_type))
@@ -174,8 +177,8 @@ class Encoder(metaclass = abc.ABCMeta):
     def _process_save_endpoint(self, feat, bridge_row: int, bridge_column: int, row: int, column: int, piece_owner: int, env: Hex) -> List[List[int]]:
         carrier_point1, carrier_point2 = self.get_carrier_points((row, column), (bridge_row, bridge_column))
         
-        carrier_point1_piece = env.get_board().get_cell(carrier_point1[0], carrier_point1[1]).get_piece() 
-        carrier_point2_piece = env.get_board().get_cell(carrier_point2[0], carrier_point2[1]).get_piece()
+        carrier_point1_piece = env.value_of((carrier_point1[0], carrier_point1[1]))
+        carrier_point2_piece = env.value_of((carrier_point2[0], carrier_point2[1]))
 
         
         if carrier_point2_piece != 0 and carrier_point2_piece != piece_owner and carrier_point1_piece==0:
@@ -190,7 +193,8 @@ class Encoder(metaclass = abc.ABCMeta):
 
         return feat
 
-    def convert_planes_to_tensor(self, planes) -> np.ndarray:
+    def convert_planes_to_tensor(self, planes) -> 'tensor':
+        
         # Create new axis in all planes
         for i in range(len(planes)):
             planes[i] = np.expand_dims(planes[i], axis=2)
@@ -243,7 +247,19 @@ class HexEncoder(Encoder):
     def __init__(self, padding):
         super().__init__(padding)
         self.planes = None
+        self.planes_indices = None
         self.padded_env = None
+
+    def copy(self) -> 'HexEncoder':
+        new =  HexEncoder(padding=self.padding)
+        new.padded_env = self.padded_env.copy()
+        new.planes = self.copy_planes()
+        new.planes_indices = self.planes_indices
+        new.encoding = self.encoding
+        return new
+
+    def copy_planes(self):
+        return np.copy(self.planes)
 
     def encode(self, env: Hex) -> 'tensor':
         """
@@ -282,52 +298,48 @@ class HexEncoder(Encoder):
         to_play_form_bridge = form_bridge_blue if env.current_player == 1 else form_bridge_red
 
         planes = [blue, red, empty, blue_bridge, red_bridge, to_play_blue, to_play_red, to_play_save_bridge, to_play_form_bridge]
-        self.planes = {'blue':blue, 'red':red, 'empty':empty, 'blue_bridge':blue_bridge, 'red_bridge':red_bridge, 'to_play_blue':to_play_blue, 
-                        'to_play_red':to_play_red, 'save_bridge_blue':save_bridge_blue, 'save_bridge_red':save_bridge_red,
-                        'form_bridge_blue':form_bridge_blue, 'form_bridge_red':form_bridge_red}
-
-        
+        self.planes_indices = {'blue':0, 'red':1, 'empty':2, 'blue_bridge':3, 'red_bridge':4, 'to_play_blue':5, 
+                        'to_play_red':6, 'save_bridge_blue':7, 'save_bridge_red':7,
+                        'form_bridge_blue':8, 'form_bridge_red':8}
+        self.planes = np.array(planes)
         self.encoding = self.convert_planes_to_tensor(planes)
         return self.encoding
 
 
     def update_encoding(self, coordinate: Tuple[int, int], env: Hex):
-
         # Update the padded env
         coordinate = self.coordinate_scaler(coordinate)
         # Since this method is called after the acton is made in the env, the current player when updating the padded env is the opposite of the env's current player
         current = 1 if env.get_current_player==2 else 2
         self.padded_env.set_piece(coordinate, current)
 
-        blue = self.update_player_stones(1, plane=self.planes['blue'], coordinate=coordinate, env=self.padded_env)
-        red = self.update_player_stones(2, plane=self.planes['red'], coordinate=coordinate, env=self.padded_env)
-        empty = self.update_player_stones(0, plane=self.planes['empty'], coordinate=coordinate, env=self.padded_env)
+        blue = self.update_player_stones(1, plane=self.planes[self.planes_indices['blue']], coordinate=coordinate, env=self.padded_env)
+        red = self.update_player_stones(2, plane=self.planes[self.planes_indices['red']], coordinate=coordinate, env=self.padded_env)
+        empty = self.update_player_stones(0, plane=self.planes[self.planes_indices['empty']], coordinate=coordinate, env=self.padded_env)
 
-        blue_bridge = self.update_bridge(1, plane_type='endpoints', plane=self.planes['blue_bridge'], coordinate=coordinate, env=self.padded_env)
-        red_bridge = self.update_bridge(2, plane_type='endpoints', plane=self.planes['red_bridge'], coordinate=coordinate, env=self.padded_env)
+        blue_bridge = self.update_bridge(1, plane_type='endpoints', plane=self.planes[self.planes_indices['blue_bridge']], coordinate=coordinate, env=self.padded_env)
+        red_bridge = self.update_bridge(2, plane_type='endpoints', plane=self.planes[self.planes_indices['red_bridge']], coordinate=coordinate, env=self.padded_env)
 
-        to_play_blue = self.to_play_encoding(1, env=env, size=self.planes['to_play_blue'].shape)
-        to_play_red = self.to_play_encoding(2, env=env, size=self.planes['to_play_red'].shape)
+        to_play_blue = self.to_play_encoding(1, env=env, size=self.planes[self.planes_indices['to_play_blue']].shape)
+        to_play_red = self.to_play_encoding(2, env=env, size=self.planes[self.planes_indices['to_play_red']].shape)
 
-        save_bridge_blue = self.update_bridge(1, plane_type='save', plane=self.planes['save_bridge_blue'], coordinate=coordinate, env=self.padded_env)
-        save_bridge_red = self.update_bridge(2, plane_type='save', plane=self.planes['save_bridge_red'], coordinate=coordinate, env=self.padded_env)
+        save_bridge_blue = self.update_bridge(1, plane_type='save', plane=self.planes[self.planes_indices['save_bridge_blue']], coordinate=coordinate, env=self.padded_env)
+        save_bridge_red = self.update_bridge(2, plane_type='save', plane=self.planes[self.planes_indices['save_bridge_red']], coordinate=coordinate, env=self.padded_env)
 
-        form_bridge_blue = self.update_bridge(1, plane_type='form', plane=self.planes['form_bridge_blue'], coordinate=coordinate, env=self.padded_env)
-        form_bridge_red = self.update_bridge(2, plane_type='form', plane=self.planes['form_bridge_red'], coordinate=coordinate, env=self.padded_env)
+        form_bridge_blue = self.update_bridge(1, plane_type='form', plane=self.planes[self.planes_indices['form_bridge_blue']], coordinate=coordinate, env=self.padded_env)
+        form_bridge_red = self.update_bridge(2, plane_type='form', plane=self.planes[self.planes_indices['form_bridge_red']], coordinate=coordinate, env=self.padded_env)
 
         # We're only using save and form bridge planes for the current player. Both versions are created to ease the updating up planes
         to_play_save_bridge = save_bridge_blue if env.current_player == 1 else save_bridge_red
         to_play_form_bridge = form_bridge_blue if env.current_player == 1 else form_bridge_red
         
         planes = [blue, red, empty, blue_bridge, red_bridge, to_play_blue, to_play_red, to_play_save_bridge, to_play_form_bridge]
-        self.planes = {'blue':blue, 'red':red, 'empty':empty, 'blue_bridge':blue_bridge, 'red_bridge':red_bridge, 'to_play_blue':to_play_blue, 
-                        'to_play_red':to_play_red, 'save_bridge_blue':save_bridge_blue, 'save_bridge_red':save_bridge_red,
-                        'form_bridge_blue':form_bridge_blue, 'form_bridge_red':form_bridge_red}
+        self.planes = np.array(planes)
         
         self.encoding = self.convert_planes_to_tensor(planes)
 
     def update_player_stones(self, piece_owner:int, plane:np.array, coordinate:Tuple[int,int], env:Hex):
-        piece_value = env.get_board().get_cell(coordinate[0], coordinate[1]).get_piece()
+        piece_value = env.value_of((coordinate[0], coordinate[1]))
         if piece_value == piece_owner:
             plane[self.coordinate_scaler(coordinate)] = 1
         return plane
@@ -342,8 +354,8 @@ class DemoEncoder(Encoder):
     def encode(self, env: Hex):
         player = env.get_current_player()
         encoding = []
-        for cell in env.get_board().get_cells():
-            piece = cell.get_piece() 
+        for coordinate in env.get_coordinates():
+            piece = env.value_of(coordinate) 
             if piece == player:
                 one_hot = [1,1]
             elif piece == 0:

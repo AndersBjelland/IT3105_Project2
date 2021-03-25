@@ -5,6 +5,7 @@ import numpy as np
 import networkx as nx
 import matplotlib.pyplot as plt
 import random
+from itertools import product
 from typing import Tuple, List, Set
 
 
@@ -51,7 +52,7 @@ cell [0,n] is the right (east)
 EMPTY, BLUE, RED = 0, 1, 2
 
 class Hex(Environment):
-    def __init__(self, size: Tuple[int, int], start_player=BLUE):
+    def __init__(self, size: Tuple[int, int], start_player=BLUE, board = None, neighbours = None):
         """
         size: size of grid (n,n)
         empty_cells: [(row, column)...]
@@ -62,13 +63,27 @@ class Hex(Environment):
         self.start_player = start_player
 
         self.size = size
-        self.board = Diamond(size)
+        self.board = np.zeros(size) if board is None else np.copy(board)
+        self.coordinates = list(product([_ for _ in range(size[0])], [_ for _ in range(size[0])]))
+        self.neighbours  = self.generate_neighbours() if neighbours is None else neighbours
         
-        """ # Initialize the board as empty
-        for cell in self.get_board().get_cells():
-            cell.set_piece(EMPTY) """
         
         self.encoder = None
+
+    def generate_neighbours(self):
+        neighbours = {}
+        for coordinate in self.get_coordinates():
+            row, column = coordinate[0], coordinate[1]
+            neighbour_coordinates = self.get_neighbouring_indecies(row, column)
+            for n_row, n_column in neighbour_coordinates:
+                if 0 <= n_row < self.size[0] and 0 <= n_column < self.size[1]:
+                    neighbours[(row, column)] = neighbours[(row, column)] + [(n_row, n_column)] if (row, column) in neighbours else [(n_row, n_column)]
+        return neighbours
+
+    def get_neighbouring_indecies(self, row: int, column: int) -> List[Tuple[int,int]]:
+        return [(row-1, column), (row-1,column+1),
+                (row, column-1), (row, column+1), 
+                (row+1, column-1), (row+1, column)]
 
     # We include an encoder to efficiently update the encoding of the game state when moves are made
     def set_encoder(self, encoder):
@@ -77,39 +92,41 @@ class Hex(Environment):
             encoder.encode(self)
 
     def reset(self):
-        self.cells = np.zeros(self.size)
+        self.board = np.zeros(self.size)
         self.current_player = self.start_player
-        """ for cell in self.get_board().get_cells():
-            cell.set_piece(EMPTY) """
         self.encoder.encode(self)
 
     def copy(self) -> 'Hex':
-        new_hex = Hex(self.size, self.current_player)
-        for cell in self.get_board().get_cells():
-            equivalent_cell = new_hex.get_board().get_cell(cell.get_row(), cell.get_column())
-            equivalent_cell.set_piece(cell.get_piece())
-        new_hex.set_encoder(self.encoder)
+        new_hex = Hex(self.size, self.current_player, board=self.board, neighbours=self.neighbours)
+        encoder = self.encoder
+        if encoder is not None:
+            encoder = encoder.copy()
+        new_hex.encoder = encoder
+        
         return new_hex
 
     def get_current_player(self) -> int:
         return self.current_player
 
 
-    def get_board(self) -> "HexagonalGrid":
+    def get_board(self) -> np.ndarray:
         return self.board 
 
     def get_size(self) -> Tuple[int, int]:
         return self.size
 
     def make_action(self, coordinate: Tuple):
-        cell = self.get_board().get_cell(coordinate[0], coordinate[1])
-        if cell.get_piece() != EMPTY:
+        cell = self.value_of(coordinate)
+        if cell != EMPTY:
             print("tried this action {} on this board".format(coordinate))
             self.display_board()
             raise ValueError("Action cannot be made because {} is not empty".format(coordinate))
-        cell.set_piece(self.current_player)
+        self.set_piece(coordinate, self.current_player)
+        
         self.current_player = BLUE if self.current_player == RED else RED
-        self.encoder.update_encoding(coordinate, self)
+        
+        if self.encoder is not None:
+            self.encoder.update_encoding(coordinate, self)
     
 
     def get_NW_coordinates(self, layer=0) -> Tuple[Tuple[int,int]]:
@@ -147,25 +164,25 @@ class Hex(Environment):
         """
         visited = []
         to_visit = []
-        current_cell = self.get_board().get_cell(coordinate[0], coordinate[1])
+        cell_value = self.value_of(coordinate)
+        current_coordinate = coordinate
 
-        if current_cell.get_piece() == player:
-            to_visit.append(current_cell)
+        if cell_value == player:
+            to_visit.append(current_coordinate)
 
         while len(to_visit) != 0:
             # Add current cell to the visited list
-            visited.append(current_cell)
+            visited.append(current_coordinate)
 
             # Get the neighbours that are owned by the player and are not already visited
-            neighbour_cells = [cell  for cell in current_cell.get_neighbours() if cell.get_piece() == player and cell not in visited]
-
-            # Add neighbours to the to_visit list 
-            to_visit += neighbour_cells
+            neighbour_coordinates = [coordinate for coordinate in self.get_neighbours(current_coordinate) if self.value_of(coordinate) == player and coordinate not in visited]
+    
+            to_visit += neighbour_coordinates
 
             # Set current cell to the next we will update and remove that for to_visit
-            current_cell = to_visit.pop()
+            current_coordinate = to_visit.pop()
         
-        return [(cell.get_row(), cell.get_column()) for cell in visited]
+        return [coordinate for coordinate in visited]
 
 
     def get_winner(self) -> int:
@@ -184,20 +201,21 @@ class Hex(Environment):
         return 0
 
     def available_actions(self) -> List[Tuple[int,int]]:
-        return [(cell.get_row(), cell.get_column()) for cell in self.get_board().get_cells() if cell.get_piece() == 0]
+        return [coordinate for coordinate in self.get_coordinates() if self.value_of(coordinate) == 0]
 
     def available_actions_binary(self) -> List[Tuple[int, Tuple[int, int]]]:
         """
         Returns a list with 0 or 1 indicating if an action is legal or not, combined with the corresponding action
         """
-        return [(1, (cell.get_row(), cell.get_column())) if cell.get_piece() == 0 else (0, (cell.get_row(), cell.get_column())) for cell in self.get_board().get_cells()]
+        return [(1, coordinate) if self.value_of(coordinate) == 0 else (0, coordinate) for coordinate in self.get_coordinates()]
 
+    
     def get_state(self) -> List[int]:
         """
         A cell is represented as 0 - EMPTY, 1 - BLUE, 2 - RED.
         We also include the current player in the first element of the state.
         """
-        state = [cell.piece for cell in self.get_board().get_cells()]
+        state = [self.value_of(coordinate) for coordinate in self.get_coordinates()]
         player = [self.current_player]
         
         return player + state
@@ -212,22 +230,26 @@ class Hex(Environment):
         This method is only used when modifying the board outside a game.
         It also overwrites if there is a stone in a cell already
         """
-        cell = self.get_board().get_cell(coordinate[0], coordinate[1])
-        cell.set_piece(owner)
+        self.board[coordinate] = owner
         
+    def value_of(self, coordinate):
+        try:
+            return self.board[coordinate]
+        except IndexError:
+            return None
+        
+
+    def get_coordinates(self):
+        return self.coordinates
+
+    def get_neighbours(self, coordinate):
+        return self.neighbours[coordinate]
+
+
+
     def equals(self, hex) -> bool:
         "Checks if two hex games are equal"
-        if self.size != hex.size:
-            return False
-
-        for row in range(self.size[0]):
-            for column in range(self.size[1]):
-                if self.get_board().get_cell(row, column).get_piece() != hex.get_board().get_cell(row, column).get_piece():
-                    return False
-        if self.current_player != hex.current_player:
-            return False
-        return True
-
+        return (self.board == hex.board).all() and self.get_current_player() == hex.get_current_player()
 
 
 
@@ -243,7 +265,7 @@ class Hex(Environment):
             vmin = min(list(distribution.values()))/2
         
         for location in G.nodes():
-            piece = self.get_board().get_cell(location[0], location[1]).get_piece()
+            piece = self.value_of(location)
             if piece == EMPTY:
                 color = 'gray' if not distribution else color_map((node_color[location] - vmin)/vmax)
                 c_map.append(color)
@@ -271,17 +293,17 @@ class Hex(Environment):
 
 
     def get_networkx_graph(self) -> "Graph":
-        cells = self.get_board().get_cells()
+        coordinates = self.get_coordinates()
         visited = []
         G = nx.Graph()
-        for cell in cells:
-            node1 = (cell.get_row(), cell.get_column())
-            for neighbour in cell.get_neighbours():
+        for coordinate in coordinates:
+            node1 = (coordinate)
+            for neighbour in self.get_neighbours(coordinate):
                 if neighbour in visited:
                     continue
-                node2 = (neighbour.get_row(), neighbour.get_column())
+                node2 = (neighbour)
                 G.add_edge(node1, node2, weight=1)
-            visited.append(cell)
+            visited.append(coordinate)
         return G
 
     def get_angle(self):
