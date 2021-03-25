@@ -64,9 +64,9 @@ class Hex(Environment):
         self.size = size
         self.board = Diamond(size)
         
-        # Initialize the board as empty
+        """ # Initialize the board as empty
         for cell in self.get_board().get_cells():
-            cell.set_piece(EMPTY)
+            cell.set_piece(EMPTY) """
         
         self.encoder = None
 
@@ -77,8 +77,10 @@ class Hex(Environment):
             encoder.encode(self)
 
     def reset(self):
-        for cell in self.get_board().get_cells():
-            cell.set_piece(EMPTY)
+        self.cells = np.zeros(self.size)
+        self.current_player = self.start_player
+        """ for cell in self.get_board().get_cells():
+            cell.set_piece(EMPTY) """
         self.encoder.encode(self)
 
     def copy(self) -> 'Hex':

@@ -43,26 +43,25 @@ class Cell:
 class HexagonalGrid(metaclass=abc.ABCMeta):
 
     def __init__(self, size: Tuple[int,int]):
-        self.cells = {}
+        self.size = size
+        self.cells = np.zeros(size)
+        self.neighbours = {} # Dictionary on the format {(row, column): [neighbour coordinates...]}
+        #self.cells = {}
     
     def generate_neighbours(self):
         cells = self.get_cells()
-        for cell in cells:
-            neighbour_coordinates = self.get_neighbouring_indecies(cell.get_row(), cell.get_column())
-            for coordinate in neighbour_coordinates:
-                neighbour = self.get_cell(coordinate[0], coordinate[1])
-                # The get_cell method returns None if a cell with the specified coordinates doesn't exist. 
-                # This means that the cell currently evaluated is at an edge.
-                if neighbour == None:
-                    continue
-                if neighbour not in cell.get_neighbours():
-                    cell.add_neighbour(neighbour)
-                    neighbour.add_neighbour(cell)     
+        for row in range(len(cells)):
+            for column in range(len(cells[row])):
+                neighbour_coordinates = self.get_neighbouring_indecies(row, column)
+                for n_row, n_column in neighbour_coordinates:
+                    if 0 <= n_row < self.size[0] and 0 <= n_column < self.size[1]:
+                        self.neighbours[(row, column)] = self.neighbours[(row, column)] + [(n_row, n_column)] if (row, column) in self.neighbours else [(n_row, n_column)]
+            
       
-    def get_cell(self, row: int, column: int) -> Cell:
+    def get_cell(self, row: int, column: int) -> int:
         try:
-            return self.cells[(row,column)]
-        except KeyError:
+            return self.cells[row,column]
+        except IndexError:
             return None
         """
         cells = self.get_cells()
@@ -70,8 +69,8 @@ class HexagonalGrid(metaclass=abc.ABCMeta):
             if cell.get_row() == row and cell.get_column() == column:
                 return cell
         """
-    def get_cells(self) -> List[Cell]:
-        return self.cells.values()
+    def get_cells(self) -> np.array:
+        return self.cells
 
     @abc.abstractclassmethod
     def get_neighbouring_indecies(self, row: int, column: int):
@@ -97,12 +96,6 @@ class Triangle(HexagonalGrid):
 class Diamond(HexagonalGrid):
     def __init__(self, size: Tuple[int,int]):
         super().__init__(size)
-        n_rows = size[0]
-        n_columns = size[1]
-        for row in range(n_rows):
-            for column in range(n_columns):
-                cell = Cell(row, column)
-                self.cells[cell.__hash__()] = cell
         self.generate_neighbours()
     
     def get_neighbouring_indecies(self, row: int, column: int) -> List[Tuple[int,int]]:
