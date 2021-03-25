@@ -19,7 +19,7 @@ class Agent:
         
     def run_episode(self, env: Hex, n_simulations: int, rollout_prob:float, action_strategy='probabilistic'):
         
-        mcts = MCTS(self.actor, env=env)
+        mcts = MCTS(self.actor, env=env, critic = self.critic)
         replay_buffer = []
 
         while env.get_winner() == 0:
