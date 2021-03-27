@@ -1,5 +1,6 @@
 from .hex import Hex
 from .encoder import Encoder
+from .helpers import copy_model
 
 from tensorflow import keras as KER
 import tensorflow as tf
@@ -14,8 +15,9 @@ An actor using a convolutional network.
 
 class Critic:
 
-    def __init__(self, learning_rate: float, encoder: Encoder, load_from='', **kwargs):
+    def __init__(self, learning_rate: float, nn_loss:float, encoder: Encoder, load_from='', **kwargs):
 
+        self.nn_loss = nn_loss
         self.learning_rate = learning_rate
         self.encoder =  encoder
         
@@ -33,10 +35,10 @@ class Critic:
             nn_opt = kwargs.get('nn_opt')
             nn_activation = kwargs.get('nn_activation')
             nn_last_activation = kwargs.get('nn_last_activation')
-            nn_loss = kwargs.get('nn_loss')
+            #nn_loss = kwargs.get('nn_loss')
 
             opt = eval('KER.optimizers.'+nn_opt)
-            loss = eval('KER.losses.' + nn_loss) if type(nn_loss) == str else nn_loss
+            loss = eval('KER.losses.' + self.nn_loss) if type(self.nn_loss) == str else self.nn_loss
 
             # Now we build the neural network. If filters and kernel_sizes are not empty we build a CNN, else a dense network.
             if len(filters) != 0 and len(kernel_sizes) != 0:
@@ -60,6 +62,11 @@ class Critic:
         return -1 + 2*output
 
     def end_of_episode(self, replay_buffer, epochs=1, batch_size=128):
+        """ try:
+            self.model = copy_model(self.model, loss=self.nn_loss)
+        except ValueError:
+            pass """
+        
         x,y = self.convert_to_network_input(replay_buffer)
         return self.model.fit(x,y, epochs=epochs, batch_size=batch_size)
 

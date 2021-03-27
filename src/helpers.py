@@ -1,6 +1,7 @@
 import networkx as nx
 import matplotlib.pyplot as plt
 import numpy as np
+import tensorflow as tf
 from typing import Dict, Tuple, List
 
 def rotate(G: "Graph", angle=np.pi/4) -> Dict[Tuple[int,int], Tuple[float,float]]:
@@ -18,5 +19,10 @@ def rotate_coordinate(coordinate, angle):
     return transformed
 
 
-
+def copy_model(model, loss):
+    new_model = tf.keras.models.clone_model(model)
+    opt = model.optimizer
+    new_model.compile(optimizer=opt, loss=loss, metrics=['accuracy'])
+    new_model.set_weights(model.get_weights())
+    return new_model
 
