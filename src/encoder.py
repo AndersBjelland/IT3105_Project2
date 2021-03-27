@@ -245,6 +245,9 @@ class HexEncoder(Encoder):
         self.planes = None
         self.padded_env = None
 
+    def copy(self):
+        return HexEncoder(padding=self.padding)
+
     def encode(self, env: Hex) -> 'tensor':
         """
         Sets the encoding to a tensor that will serve as one feature/encoding of a Hex board. 

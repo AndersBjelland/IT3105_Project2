@@ -87,7 +87,7 @@ class Hex(Environment):
         for cell in self.get_board().get_cells():
             equivalent_cell = new_hex.get_board().get_cell(cell.get_row(), cell.get_column())
             equivalent_cell.set_piece(cell.get_piece())
-        new_hex.set_encoder(self.encoder)
+        new_hex.set_encoder(self.encoder.copy())
         return new_hex
 
     def get_current_player(self) -> int:
