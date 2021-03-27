@@ -18,6 +18,7 @@ class Agent:
     def __init__(self, actor: Actor, critic: Critic):
         self.actor = actor
         self.critic = critic
+        self.critic2 = None
         
     def run_episode(self, env: Hex, n_simulations:int, rollout_prob:float, action_strategy='probabilistic'):
         
@@ -62,8 +63,7 @@ class Agent:
             replay_buffer = self.run_episode(env=env, n_simulations=n_simulations, rollout_prob=rollout_prob) + replay_buffer
             # Only keep the last 5000 steps
             replay_buffer = replay_buffer[:500]
-            if (i == 5):
-                return replay_buffer
+            
             # Train network for actor and critic
             print("--------------Actor training--------------")
             self.actor.end_of_episode(replay_buffer, epochs=epochs)
@@ -93,7 +93,7 @@ class Agent:
             if (i+1) % save_model_interval == 0:
                 self.actor.model.save(file_path+str(i+1)+'.h5')
                 self.critic.model.save(file_path+'_critic_'+str(i+1)+'.h5')
-
+        self.critic2 = critic2
 
     def plot_distribution(self, distribution):
         print(distribution)
