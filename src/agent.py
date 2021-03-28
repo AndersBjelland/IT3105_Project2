@@ -1,4 +1,5 @@
 from .actor import Actor
+from .critic import Critic
 from .monte_carlo_ts import MCTS
 from .hex import Hex
 import numpy as np
@@ -12,8 +13,9 @@ import math
 
 class Agent:
 
-    def __init__(self, actor: Actor):
+    def __init__(self, actor: Actor, critic: Critic):
         self.actor = actor
+        self.critic = critic
         
     def run_episode(self, env: Hex, n_simulations: int, action_strategy='probabilistic'):
         
@@ -34,7 +36,8 @@ class Agent:
             env.make_action(action)
             
             mcts.set_new_root(action)
-        
+        winner = env.get_winner()
+        replay_buffer = [entry + (1,) if entry[0].get_current_player() == winner else entry + (0,) for entry in replay_buffer]
         env.reset()
         
         return replay_buffer
@@ -52,7 +55,10 @@ class Agent:
             # Only keep the last 5000 steps
             replay_buffer = replay_buffer[:50000]
             # Train network
+            print("--------------actor-------------")
             self.actor.end_of_episode(replay_buffer, epochs=epochs)
+            print("--------------critic------------")
+            self.critic.end_of_episode(replay_buffer, epochs=epochs)
             # Update epsilon
             self.actor.epsilon = self.actor.epsilon - epsilon_decay_factor*(i+1)
 
