@@ -60,14 +60,12 @@ class Actor:
         feature_maps = env.encoder.get_encoding()
 
         prob_dist = self.model(feature_maps).numpy().reshape((-1,))
-        print("prob_dist from network: ", prob_dist)
-        print("sum:", sum(list(prob_dist)))
+    
         # legal moves is a list with tuples like [ (1, (1,2)), (0,(0,0)) ]
         legal_moves = env.available_actions_binary()
         
         # Combine probability dist from the network and legal moves to dict on the form {action:probability, ...}
         prob_dist = {legal_moves[i][1]:prob_dist[i] for i in range(len(prob_dist)) if legal_moves[i][0]}
-        print(prob_dist)
         # Return an action in a epsilon greedy manner
         if random.random() <= self.epsilon:
             return random.choice(list(prob_dist.keys()))
