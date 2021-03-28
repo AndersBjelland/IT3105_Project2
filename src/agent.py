@@ -17,13 +17,13 @@ class Agent:
         self.actor = actor
         self.critic = critic
         
-    def run_episode(self, env: Hex, n_simulations: int, action_strategy='probabilistic'):
+    def run_episode(self, env: Hex, n_simulations: int, rollout_prob: float, action_strategy='probabilistic'):
         
-        mcts = MCTS(self.actor, env=env)
+        mcts = MCTS(self.actor, env=env, critic=self.critic)
         replay_buffer = []
 
         while env.get_winner() == 0:
-            distribution = mcts.search(n_simulations=n_simulations)
+            distribution = mcts.search(n_simulations=n_simulations, rollout_prob=rollout_prob)
             
             if action_strategy == 'greedy':
                 # Choose action greedily
@@ -42,16 +42,18 @@ class Agent:
         
         return replay_buffer
 
-    def train_agent(self, env: Hex, n_episodes:int, n_simulations: int, epochs=1, M=1, file_path=''):
+    def train_agent(self, env: Hex, n_episodes:int, n_simulations: int, start_rollout_prob: float, end_rollout_prob:float, epochs=1, M=1, file_path=''):
 
         replay_buffer = []
         epsilon_decay_factor = (self.actor.epsilon - self.actor.end_epsilon)/n_episodes
         save_model_interval = math.floor(n_episodes/M)
         
+        rollout_prob = start_rollout_prob
+        decreasing_step = (start_rollout_prob - end_rollout_prob)/n_simulations
 
         for i in tqdm(range(n_episodes)):
             # Add new training examples to the replay buffer
-            replay_buffer = self.run_episode(env=env, n_simulations=n_simulations) + replay_buffer
+            replay_buffer = self.run_episode(env=env, n_simulations=n_simulations, rollout_prob=rollout_prob) + replay_buffer
             # Only keep the last 5000 steps
             replay_buffer = replay_buffer[:50000]
             # Train network
@@ -67,6 +69,8 @@ class Agent:
                 self.actor.model.save(file_path+str(i+1)+'.h5')
                 self.critic.model.save(file_path+'_critic_'+str(i+1)+'.h5')
 
+            # update rollout_prob
+            rollout_prob -= decreasing_step
     def plot_distribution(self, distribution):
         print(distribution)
         plt.figure(figsize=(10,5))
