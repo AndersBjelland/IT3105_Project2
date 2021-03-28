@@ -154,7 +154,7 @@ class MCTS():
 
         leaf_node = self._traverse_to_leaf()
         expanded_node = self._expand(leaf_node)
-        value = self._rollout(expanded_node) if random.random() <= rollout_prob else self.critic.get_value(self.env)
+        value = self._rollout(expanded_node) if random.random() < rollout_prob else self.critic.get_value(self.env)
         self.env = self.org_env.copy()
         self._back_prop(expanded_node, value)
         
@@ -177,7 +177,7 @@ class MCTS():
                 self.env.display_board(ax=ax, distribution=distribution)
                 
                 plt.draw()
-                plt.pause(1)
+                plt.pause(0.1)
         
         distribution = {child.action : child.traverse_count for child in self.root.get_children()}
         factor = 1/sum(distribution.values())
