@@ -29,8 +29,8 @@ class Encoder(metaclass = abc.ABCMeta):
 
 
     def create_padded_env(self, env: Hex, padding:int) -> 'env':
-        if padding < 1:
-            return env
+        #if padding < 1:
+        #    return env.copy()
         current_env_size = env.size
         new_size = (current_env_size[0] + padding*2, current_env_size[1] + padding*2)
         coordinate_scaler = lambda x: (x[0] + padding, x[1] + padding) # coresponding coordinate in new env
@@ -165,7 +165,10 @@ class Encoder(metaclass = abc.ABCMeta):
 
             # Process as an endpoint point
             elif plane_type == 'endpoints':
-                feat[bridge_row][bridge_column] = 1 if bridge_cell.get_piece() == piece_owner else 0
+                if bridge_cell.get_piece() == piece_owner:
+                    feat[bridge_row][bridge_column] = 1
+                    feat[row][column] = 1
+                
 
             else:
                 raise ValueError("plane_type must be one of 'save', 'form', 'endpoints' (got {})".format(plane_type))
@@ -295,11 +298,10 @@ class HexEncoder(Encoder):
 
 
     def update_encoding(self, coordinate: Tuple[int, int], env: Hex):
-
         # Update the padded env
         coordinate = self.coordinate_scaler(coordinate)
         # Since this method is called after the acton is made in the env, the current player when updating the padded env is the opposite of the env's current player
-        current = 1 if env.get_current_player==2 else 2
+        current = 1 if env.get_current_player()==2 else 2
         self.padded_env.set_piece(coordinate, current)
 
         blue = self.update_player_stones(1, plane=self.planes['blue'], coordinate=coordinate, env=self.padded_env)
@@ -332,10 +334,16 @@ class HexEncoder(Encoder):
     def update_player_stones(self, piece_owner:int, plane:np.array, coordinate:Tuple[int,int], env:Hex):
         piece_value = env.get_board().get_cell(coordinate[0], coordinate[1]).get_piece()
         if piece_value == piece_owner:
-            plane[self.coordinate_scaler(coordinate)] = 1
+            plane[coordinate] = 1
+        else:
+            plane[coordinate] = 0
+
         return plane
 
     def update_bridge(self, piece_owner:int, plane_type:'str', plane:np.ndarray, coordinate:Tuple[int, int], env:Hex):
+        # Update such that the now occupied cell is not considered a possible bridge form point if is was before
+        if plane_type=='form':
+            plane[coordinate] = 0
         return self._coordinate_bridge_encoding(piece_owner, coordinate[0], coordinate[1], env, plane_type, plane)
 
 
