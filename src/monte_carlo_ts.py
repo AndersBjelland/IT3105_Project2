@@ -44,7 +44,8 @@ alternating maximizing and minimizing depending on which player that plays at ea
 
 class MCTS():
 
-    def __init__(self, target_policy:'Actor', env: Hex):
+    def __init__(self, target_policy:'Actor', env: Hex, critic:'critic'):
+        self.critic = critic
         self.exploration_bonus = None
         self.target_policy = target_policy
         self.env = env.copy()
@@ -149,22 +150,23 @@ class MCTS():
             
             self.root = Node(current_player=current_player)
 
-    def perform_simulation(self):
+    def perform_simulation(self, rollout_prob:float):
 
         leaf_node = self._traverse_to_leaf()
         expanded_node = self._expand(leaf_node)
-        value = self._rollout(expanded_node)
+        value = self._rollout(expanded_node) if random.random() <= rollout_prob else self.critic.get_value(self.env())
+        self.env = self.org_env.copy()
         self._back_prop(expanded_node, value)
         
 
-    def search(self, n_simulations: int, exploration_bonus='uct', c=1, update_rate = 10, ax=None, plotting=False) -> Dict['action','prob']:
+    def search(self, n_simulations: int, rollout_prob: float, exploration_bonus='uct', c=1, update_rate = 10, ax=None, plotting=False) -> Dict['action','prob']:
         if exploration_bonus=='uct':
             self.exploration_bonus = lambda s,a: self._utc(s,a,c)
         else:
             raise ValueError("exploration_bonus must be one of 'utc' (got {})".format(exploration_bonus))
 
         for _ in range(n_simulations):
-            self.perform_simulation()
+            self.perform_simulation(rollout_prob=rollout_prob)
 
             if (_+1) % update_rate == 0 and plotting:
                 ax.clear()
