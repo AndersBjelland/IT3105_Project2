@@ -248,7 +248,11 @@ class HexEncoder(Encoder):
         self.padded_env = None
 
     def copy(self):
-        return HexEncoder(padding=self.padding)
+        enc = HexEncoder(padding=self.padding)
+        enc.planes = {key:np.copy(value) for key, value in self.planes.items()}
+        enc.padded_env = self.padded_env.copy_without_encoder()
+        enc.encoding = tf.identity(self.encoding)
+        return enc
 
     def encode(self, env: Hex) -> 'tensor':
         """
