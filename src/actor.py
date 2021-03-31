@@ -1,4 +1,4 @@
-from .hexagonal_grid import Cell
+
 from .hex import Hex
 from .encoder import Encoder
 
