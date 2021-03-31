@@ -38,10 +38,9 @@ class Encoder(metaclass = abc.ABCMeta):
         new_env = Hex(new_size, env.start_player)
 
         # Iterate of cells in old env and set corresponding cells in new
-        for cell in env.get_board().get_cells():
-            coordinate = (cell.get_row(), cell.get_column())
-            coordinate = coordinate_scaler(coordinate)
-            new_env.set_piece(coordinate, cell.get_piece())
+        for coordinate in env.get_coordinates():
+            padded_coordinate = coordinate_scaler(coordinate)
+            new_env.set_piece(padded_coordinate, env.value_of(coordinate))
 
         # Place stones in the added layers
         for layer in range(padding):
@@ -132,10 +131,11 @@ class Encoder(metaclass = abc.ABCMeta):
         return np.array(feat)     
 
     def _coordinate_bridge_encoding(self, piece_owner: int, row: int, column: int, env: Hex, plane_type: 'str', feat) -> np.ndarray:
-        piece = env.get_board().get_cell(row, column).get_piece()
+        
+        value = env.value_of((row, column))
                 
         # if the piece is not owned by the piece_owner we move to next
-        if piece != piece_owner:
+        if value != piece_owner:
             return feat
         
         # bridge endpoints around the current row and column
@@ -144,32 +144,31 @@ class Encoder(metaclass = abc.ABCMeta):
         # Iterate over the bridge endpoints
         for bridge_row, bridge_column in end_points:
             
-            # Cell of the current endpoint
-            bridge_cell = env.get_board().get_cell(bridge_row, bridge_column)
+            # Value of the current endpoint
+            bridge_value = env.value_of((bridge_row, bridge_column))
             
-            # If the bridge cell is None we know we are 'outside' the board
-            if bridge_cell is None:
+            # If the bridge value is None we know we are 'outside' the board
+            if bridge_value is None:
                 continue
 
             # Check scenarios
             # Process as a save point
             if plane_type == 'save':
-                # Check if the endpoint forms a bridge together with the current cell
-                if bridge_cell.get_piece() != piece_owner:
+                # Check if the endpoint forms a bridge together with the current coordinate
+                if bridge_value != piece_owner:
                     continue
                 feat = self._process_save_endpoint(feat, bridge_row, bridge_column, row, column, piece_owner, env)
 
             # Process as a form point
             elif plane_type == 'form':
-                feat[bridge_row][bridge_column] = 1 if bridge_cell.get_piece() == 0 else 0
+                feat[bridge_row][bridge_column] = 1 if bridge_value == 0 else 0
 
             # Process as an endpoint point
             elif plane_type == 'endpoints':
-                if bridge_cell.get_piece() == piece_owner:
+                if bridge_value == piece_owner:
                     feat[bridge_row][bridge_column] = 1
                     feat[row][column] = 1
-                
-
+            
             else:
                 raise ValueError("plane_type must be one of 'save', 'form', 'endpoints' (got {})".format(plane_type))
         return feat  
@@ -177,16 +176,16 @@ class Encoder(metaclass = abc.ABCMeta):
     def _process_save_endpoint(self, feat, bridge_row: int, bridge_column: int, row: int, column: int, piece_owner: int, env: Hex) -> List[List[int]]:
         carrier_point1, carrier_point2 = self.get_carrier_points((row, column), (bridge_row, bridge_column))
         
-        carrier_point1_piece = env.get_board().get_cell(carrier_point1[0], carrier_point1[1]).get_piece() 
-        carrier_point2_piece = env.get_board().get_cell(carrier_point2[0], carrier_point2[1]).get_piece()
+        carrier_point1_value = env.value_of(carrier_point1)
+        carrier_point2_value = env.value_of(carrier_point2) 
 
         
-        if carrier_point2_piece != 0 and carrier_point2_piece != piece_owner and carrier_point1_piece==0:
+        if carrier_point2_value != 0 and carrier_point2_value != piece_owner and carrier_point1_value==0:
             feat[carrier_point1[0]][carrier_point1[1]] = 1
         else:
             feat[carrier_point1[0]][carrier_point1[1]] += 0
 
-        if carrier_point1_piece != 0 and carrier_point1_piece != piece_owner and carrier_point1_piece==0:
+        if carrier_point1_value != 0 and carrier_point1_value != piece_owner and carrier_point2_value==0:
             feat[carrier_point2[0]][carrier_point2[1]] = 1
         else:
             feat[carrier_point2[0]][carrier_point2[1]] += 0
@@ -332,7 +331,7 @@ class HexEncoder(Encoder):
         self.encoding = self.convert_planes_to_tensor(planes)
 
     def update_player_stones(self, piece_owner:int, plane:np.array, coordinate:Tuple[int,int], env:Hex):
-        piece_value = env.get_board().get_cell(coordinate[0], coordinate[1]).get_piece()
+        piece_value = env.value_of(coordinate)
         if piece_value == piece_owner:
             plane[coordinate] = 1
         else:
@@ -353,11 +352,11 @@ class DemoEncoder(Encoder):
     def encode(self, env: Hex):
         player = env.get_current_player()
         encoding = []
-        for cell in env.get_board().get_cells():
-            piece = cell.get_piece() 
-            if piece == player:
+        for coordinate in env.get_coordinates():
+            value = env.value_of(coordinate)
+            if value == player:
                 one_hot = [1,1]
-            elif piece == 0:
+            elif value == 0:
                 one_hot = [0,0]
             else:
                 one_hot = [1,0]
