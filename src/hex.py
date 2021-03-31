@@ -101,8 +101,13 @@ class Hex(Environment):
     def copy(self) -> 'Hex':
         new_hex = Hex(self.size, self.current_player)
         new_hex.board = np.copy(self.get_board())
+        new_hex.encoder = self.encoder.copy()
         
-        new_hex.set_encoder(self.encoder.copy())
+        return new_hex
+
+    def copy_without_encoder(self) -> 'Hex':
+        new_hex = Hex(self.size, self.current_player)
+        new_hex.board = np.copy(self.get_board())
         return new_hex
 
     def get_current_player(self) -> int:
