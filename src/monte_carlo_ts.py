@@ -50,7 +50,7 @@ class MCTS():
         self.target_policy = target_policy
         self.env = env.copy()
         self.org_env = env.copy()
-        self.root = Node(current_player=self.env.get_current_player())
+        self.root = Node(env=self.env, current_player=self.env.get_current_player())
         
 
     def _traverse_to_leaf(self) -> Node:
@@ -59,33 +59,42 @@ class MCTS():
             
             # Use the policy to get the next node and set it to current
             current = self.tree_policy(current)
-            self.env.make_action(current.action)
         
         return current
 
     def _expand(self, node: Node) -> Node: 
         # Check if the node represents a final state
-        if self.env.get_winner():
+        if node.env.get_winner():
             return node
 
         # Get actions that are not yet taken from the node we expand
-        actions = [action for action in self.env.available_actions() if node.get_child(action) is None]
+        actions = [action for action in node.env.available_actions() if node.get_child(action) is None]
         action = random.choice(actions)
-        self.env.make_action(action)
-       
-
-        return Node(current_player = self.env.get_current_player(),parent=node, action=action)
+        new_env = node.env.copy()
+        new_env.make_action(action)
+        
+        return Node(env=new_env, current_player = new_env.get_current_player(), parent=node, action=action)
 
     def _rollout(self, node: Node) -> int:
-        player = self.env.get_current_player()
+        player = node.env.get_current_player()
+        env = node.env.copy()
+        while not env.get_winner():
+            action = self.target_policy.get_action(env)
+            env.make_action(action)
         
-        while not self.env.get_winner():
-            action = self.target_policy.get_action(self.env)
-            self.env.make_action(action)
-        
-        winner = self.env.get_winner()
-        self.env = self.org_env.copy()
+        winner = env.get_winner()
         return 1 if player == winner else -1
+        
+    def critic_evaluation(self, node) -> float:
+        """
+        returns the critic's evaluation of the state of the env in the node given as input. If the state is a final state,
+        the actual output is used as value
+        """
+        # Check if state at node is final
+        winner = node.env.get_winner()
+        if winner > 0:
+            return 1 if winner == node.current_player else -1
+        return self.critic.get_value(node.env)
             
 
     def _back_prop(self, node: Node, value: float):
@@ -112,7 +121,7 @@ class MCTS():
         We know that for a k x k board there are k x k - d available moves for a node at depth d.
         We therefore check if there are k x k - d children, if it is not we are at a leaf node.
         """
-        available_actions = self.env.available_actions()
+        available_actions = node.env.available_actions()
 
         # If there are available actions and the number of children equals the number of available actions we can conclude that it is not a leaf node
         if len(available_actions) > 0 and len(available_actions) == len(node.get_children()):
@@ -141,21 +150,22 @@ class MCTS():
         child = self.root.get_child(action)
         if child:
             self.root = child
-            self.env.make_action(action)
-            self.org_env = self.env.copy()
+            
         else:
+            raise ValueError(action, "is not yet been explored from the current root node")
+            """
             self.env.make_action(action)
             current_player = self.env.get_current_player()
             self.org_env = self.env.copy()
             
             self.root = Node(current_player=current_player)
+            """
 
     def perform_simulation(self, rollout_prob:float):
 
         leaf_node = self._traverse_to_leaf()
         expanded_node = self._expand(leaf_node)
-        value = self._rollout(expanded_node) if random.random() < rollout_prob else self.critic.get_value(self.env)
-        self.env = self.org_env.copy()
+        value = self._rollout(expanded_node) if random.random() < rollout_prob else self.critic_evaluation(expanded_node)
         self._back_prop(expanded_node, value)
         
 
@@ -174,7 +184,7 @@ class MCTS():
                 distribution = {child.action : child.traverse_count for child in self.root.get_children()}
                 factor = 1/sum(distribution.values())
                 distribution = {action : v*factor for action, v in distribution.items()}
-                self.env.display_board(ax=ax, distribution=distribution)
+                self.root.env.display_board(ax=ax, distribution=distribution)
                 
                 plt.draw()
                 plt.pause(0.1)
@@ -184,6 +194,8 @@ class MCTS():
         distribution = {action : v*factor for action, v in distribution.items()}
         
         return distribution
+
+    
 
 
     def visualize_tree(self, root_color):
