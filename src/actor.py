@@ -15,7 +15,7 @@ An actor using a convolutional network.
 
 class Actor:
 
-    def __init__(self, learning_rate: float, epsilon: float, end_epsilon: float, encoder: Encoder, load_from='', **kwargs):
+    def __init__(self, encoder: Encoder, learning_rate=0.001, epsilon=0, end_epsilon=0,  load_from='', **kwargs):
 
         self.learning_rate = learning_rate
         self.epsilon = epsilon
