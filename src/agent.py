@@ -78,6 +78,7 @@ class Agent:
                 arena = Arena(self.actor, Actor(encoder=env.encoder, load_from='checkpoints/actor' + i + '.h5'), env, num_games=50)
                 dist = arena.play_games()
                 if dist[self.actor] < threshold:
+                    print("------------new model did not beat current best-----------")
                     self.actor.model = current_best_actor_nn
                     self.critic.model = current_best_critic_nn
                 else:
