@@ -59,7 +59,7 @@ class Critic:
         feature_maps = env.encoder.get_encoding()
 
         output = self.model(feature_maps).numpy()[0,0]
-        return -1+2*output
+        return output
 
     def end_of_episode(self, replay_buffer, epochs=1, batch_size=128):
         """ try:
