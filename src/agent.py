@@ -134,7 +134,7 @@ class Arena:
         for _ in range(self.num_games):
             
             # Let player 1 and 2 be the starting player for the same number of games
-            players = [self.actor1, self.actor2] if self.num_games/2 <= _ else [self.actor2, self,actor1]
+            players = [self.actor1, self.actor2] if self.num_games/2 <= _ else [self.actor2, self.actor1]
             
             player1 = players[0]
             player2 = players[1]
