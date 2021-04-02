@@ -2,7 +2,7 @@ from .actor import Actor
 from .critic import Critic
 from .monte_carlo_ts import MCTS
 from .hex import Hex
-from .topp import Topp
+
 import numpy as np
 import matplotlib.pyplot as plt
 from tqdm import tqdm
