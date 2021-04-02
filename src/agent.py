@@ -56,10 +56,7 @@ class Agent:
         rollout_prob = start_rollout_prob
         decreasing_step = (start_rollout_prob - end_rollout_prob)/n_simulations
 
-        # Checkpoint critic and actor
-        best_index = 0
-        self.actor.model.save(file_path + 'checkpointActor'+ best_index + '.h5')
-        self.critic.model.save(file_path + 'checkpointCritic' + best_index + '.h5')
+        
 
         for i in tqdm(range(n_episodes)):
             # Add new training examples to the replay buffer
@@ -72,10 +69,16 @@ class Agent:
             print("--------------critic------------")
             self.critic.end_of_episode(replay_buffer, epochs=epochs)
 
+            # checkpoint initial model as best
+            if i == 0:
+                self.actor.model.save(file_path + 'checkpointActor' + str(i) + '.h5')
+                self.critic.model.save(file_path + 'checkpointCritic' + str(i) + '.h5')
+                best_index = 0
+
             # let the new network compete against current best network
             if n_episodes % compete_rate == 0 and compete:
-                current_best_actor_nn = KER.models.load_model(file_path + 'checkpointActor' + best_index + '.h5')
-                current_best_critic_nn = KER.models.load_model(file_path + 'checkpointCritic' + best_index + '.h5')
+                current_best_actor_nn = KER.models.load_model(file_path + 'checkpointActor' + str(best_index) + '.h5')
+                current_best_critic_nn = KER.models.load_model(file_path + 'checkpointCritic' + str(best_index) + '.h5')
                 arena = Arena(self.actor, Actor(encoder=env.encoder, load_from= file_path + 'checkpointActor' + i + '.h5'), env, num_games=50)
                 dist = arena.play_games()
                 if dist[self.actor] < threshold:
@@ -85,8 +88,8 @@ class Agent:
                 else:
                     print("------------new model beat current best--------------")
                     # checkpoint new best actor and critic
-                    self.actor.model.save(file_path + 'checkpointActor' + i + '.h5')
-                    self.critic.model.save(file_path + 'checkpointCritic' + i + '.h5')
+                    self.actor.model.save(file_path + 'checkpointActor' + str(i) + '.h5')
+                    self.critic.model.save(file_path + 'checkpointCritic' + str(i) + '.h5')
                     best_index = i
 
             # Update epsilon
