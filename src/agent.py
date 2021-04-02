@@ -132,9 +132,10 @@ class Arena:
         winner_scores = {self.actor1:0, self.actor2:0}
 
         for _ in range(self.num_games):
-            # randomly shuffle to vary who starts
-            players = [self.actor1, self.actor2]
-            random.shuffle(players)
+            
+            # Let player 1 and 2 be the starting player for the same number of games
+            players = [self.actor1, self.actor2] if self.num_games/2 <= _ else [self.actor2, self,actor1]
+            
             player1 = players[0]
             player2 = players[1]
             winner = self.play_game(player1, player2)
