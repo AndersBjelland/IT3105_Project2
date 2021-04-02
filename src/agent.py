@@ -47,7 +47,7 @@ class Agent:
         
         return replay_buffer
 
-    def train_agent(self, env: Hex, n_episodes:int, n_simulations: int, start_rollout_prob: float, end_rollout_prob:float, epochs=1, M=1, file_path='', compete_rate=10, threshold=0.55):
+    def train_agent(self, env: Hex, n_episodes:int, n_simulations: int, start_rollout_prob: float, end_rollout_prob:float, epochs=1, M=1, file_path='', compete=False, compete_rate=10, threshold=0.55):
 
         replay_buffer = []
         epsilon_decay_factor = (self.actor.epsilon - self.actor.end_epsilon)/n_episodes
@@ -57,8 +57,9 @@ class Agent:
         decreasing_step = (start_rollout_prob - end_rollout_prob)/n_simulations
 
         # Checkpoint critic and actor
-        self.actor.model.save('checkpoints/actor0.h5')
-        self.critic.model.save('checkpoints/critic0.h5')
+        best_index = 0
+        self.actor.model.save(file_path + 'checkpointActor'+ best_index + '.h5')
+        self.critic.model.save(file_path + 'checkpointCritic' + best_index + '.h5')
 
         for i in tqdm(range(n_episodes)):
             # Add new training examples to the replay buffer
@@ -72,10 +73,10 @@ class Agent:
             self.critic.end_of_episode(replay_buffer, epochs=epochs)
 
             # let the new network compete against current best network
-            if n_episodes % compete_rate == 0:
-                current_best_actor_nn = KER.models.load_model('checkpoints/actor' + i + '.h5')
-                current_best_critic_nn = KER.models.load_model('checkpoints/critic' + i + '.h5')
-                arena = Arena(self.actor, Actor(encoder=env.encoder, load_from='checkpoints/actor' + i + '.h5'), env, num_games=50)
+            if n_episodes % compete_rate == 0 and compete:
+                current_best_actor_nn = KER.models.load_model(file_path + 'checkpointActor' + best_index + '.h5')
+                current_best_critic_nn = KER.models.load_model(file_path + 'checkpointCritic' + best_index + '.h5')
+                arena = Arena(self.actor, Actor(encoder=env.encoder, load_from= file_path + 'checkpointActor' + i + '.h5'), env, num_games=50)
                 dist = arena.play_games()
                 if dist[self.actor] < threshold:
                     print("------------new model did not beat current best-----------")
@@ -84,8 +85,9 @@ class Agent:
                 else:
                     print("------------new model beat current best--------------")
                     # checkpoint new best actor and critic
-                    self.actor.model.save('checkpoints/actor' + i + '.h5')
-                    self.critic.model.save('checkpoints/critic' + i + '.h5')
+                    self.actor.model.save(file_path + 'checkpointActor' + i + '.h5')
+                    self.critic.model.save(file_path + 'checkpointCritic' + i + '.h5')
+                    best_index = i
 
             # Update epsilon
             self.actor.epsilon = self.actor.epsilon - epsilon_decay_factor*(i+1)
