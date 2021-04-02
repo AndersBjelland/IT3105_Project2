@@ -80,7 +80,7 @@ class Actor:
 
 
     def convert_to_network_input(self, replay_buffer):
-        x = tf.concat([self.encoder.encode(entry[0]) for entry in replay_buffer], 0)        
+        x = tf.concat([entry[0].encoder.get_encoding() for entry in replay_buffer], 0)        
         y = tf.convert_to_tensor([self.to_full_dist(entry) for entry in replay_buffer])
         return x,y
 

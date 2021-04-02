@@ -66,12 +66,12 @@ class Critic:
             self.model = copy_model(self.model, loss=self.nn_loss)
         except ValueError:
             pass """
-        
+
         x,y = self.convert_to_network_input(replay_buffer)
         return self.model.fit(x,y, epochs=epochs, batch_size=batch_size)
 
     def convert_to_network_input(self, replay_buffer):
-        x = tf.concat([self.encoder.encode(entry[0]) for entry in replay_buffer], 0)  
+        x = tf.concat([entry[0].encoder.get_encoding() for entry in replay_buffer], 0)  
         print("first replay: ", len(replay_buffer[0]))      
         y = tf.convert_to_tensor([entry[2] for entry in replay_buffer])
         return x,y

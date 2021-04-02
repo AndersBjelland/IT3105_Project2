@@ -51,14 +51,30 @@ class Agent:
 
         replay_buffer = []
         epsilon_decay_factor = (self.actor.epsilon - self.actor.end_epsilon)/n_episodes
-        save_model_interval = math.floor(n_episodes/M)
+        save_model_interval = math.floor(n_episodes/(M-1))
         
         rollout_prob = start_rollout_prob
         decreasing_step = (start_rollout_prob - end_rollout_prob)/n_simulations
 
-        
+        # run env through the critic and actor network to set weights
+        #self.actor.get_action(env)
+        #self.critic.get_value(env)
+        shape = [None] + env.encoder.get_encoding().shape[1:]
+        self.actor.model.build(shape)
+        self.critic.model.build(shape)
+
+        # checkpoint initial model as best
+        self.actor.model.save(file_path + 'checkpointActor0.h5')
+        self.critic.model.save(file_path + 'checkpointCritic0.h5')
+        best_index = 0
 
         for i in tqdm(range(n_episodes)):
+
+            # Save model to file
+            if (i) % save_model_interval == 0:
+                self.actor.model.save(file_path+str(i)+'.h5')
+                self.critic.model.save(file_path+'_critic_'+str(i)+'.h5')
+
             # Add new training examples to the replay buffer
             replay_buffer = self.run_episode(env=env, n_simulations=n_simulations, rollout_prob=rollout_prob) + replay_buffer
             # Only keep the last 50000 steps
@@ -69,19 +85,18 @@ class Agent:
             print("--------------critic------------")
             self.critic.end_of_episode(replay_buffer, epochs=epochs)
 
-            # checkpoint initial model as best
-            if i == 0:
-                self.actor.model.save(file_path + 'checkpointActor' + str(i) + '.h5')
-                self.critic.model.save(file_path + 'checkpointCritic' + str(i) + '.h5')
-                best_index = 0
-
             # let the new network compete against current best network
-            if n_episodes % compete_rate == 0 and compete:
+            if (i+1) % compete_rate == 0 and compete:
                 current_best_actor_nn = KER.models.load_model(file_path + 'checkpointActor' + str(best_index) + '.h5')
                 current_best_critic_nn = KER.models.load_model(file_path + 'checkpointCritic' + str(best_index) + '.h5')
-                arena = Arena(self.actor, Actor(encoder=env.encoder, load_from= file_path + 'checkpointActor' + i + '.h5'), env, num_games=50)
+                current_best_actor = Actor(encoder=env.encoder, load_from=file_path + 'checkpointActor' + str(best_index) + '.h5')
+                arena = Arena(self.actor, current_best_actor, env, num_games=50)
+                print("---------------competing-----------")
                 dist = arena.play_games()
-                if dist[self.actor] < threshold:
+                print("new_model won " + str(100*dist[self.actor]) + "%")
+                print("current best won " + str(100*dist[current_best_actor]) + "%")
+                print(dist)
+                if dist[self.actor] < threshold: 
                     print("------------new model did not beat current best-----------")
                     self.actor.model = current_best_actor_nn
                     self.critic.model = current_best_critic_nn
@@ -95,13 +110,13 @@ class Agent:
             # Update epsilon
             self.actor.epsilon = self.actor.epsilon - epsilon_decay_factor*(i+1)
 
-            # Save model to file
-            if (i+1) % save_model_interval == 0:
-                self.actor.model.save(file_path+str(i+1)+'.h5')
-                self.critic.model.save(file_path+'_critic_'+str(i+1)+'.h5')
-
             # update rollout_prob
             rollout_prob -= decreasing_step
+
+        # save last model to file
+        if (n_episodes) % save_model_interval == 0:
+            self.actor.model.save(file_path+str(i+1)+'.h5')
+            self.critic.model.save(file_path+'_critic_'+str(i+1)+'.h5')
 
     
     def plot_distribution(self, distribution):
