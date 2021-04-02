@@ -47,7 +47,7 @@ class Agent:
         
         return replay_buffer
 
-    def train_agent(self, env: Hex, n_episodes:int, n_simulations: int, start_rollout_prob: float, end_rollout_prob:float, epochs=1, M=1, file_path='', compete=False, compete_rate=10, threshold=0.55):
+    def train_agent(self, env: Hex, n_episodes:int, n_simulations: int, start_rollout_prob: float, end_rollout_prob:float, epochs=1, M=1, file_path='', compete=False, compete_rate=10, threshold=0.55, compete_num_games=50):
 
         replay_buffer = []
         epsilon_decay_factor = (self.actor.epsilon - self.actor.end_epsilon)/n_episodes
@@ -90,7 +90,7 @@ class Agent:
                 current_best_actor_nn = KER.models.load_model(file_path + 'checkpointActor' + str(best_index) + '.h5')
                 current_best_critic_nn = KER.models.load_model(file_path + 'checkpointCritic' + str(best_index) + '.h5')
                 current_best_actor = Actor(encoder=env.encoder, load_from=file_path + 'checkpointActor' + str(best_index) + '.h5')
-                arena = Arena(self.actor, current_best_actor, env, num_games=50)
+                arena = Arena(self.actor, current_best_actor, env, num_games=compete_num_games)
                 print("---------------competing-----------")
                 dist = arena.play_games()
                 print("new_model won " + str(100*dist[self.actor]) + "%")
