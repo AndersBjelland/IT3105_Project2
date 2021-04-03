@@ -7,5 +7,7 @@ from .encoder import *
 from .actor import *
 from .agent import *
 from .topp import *
+from .BasicClientActorAbs import *
+from .BasicClientActor import *
 
 

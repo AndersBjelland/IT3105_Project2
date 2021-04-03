@@ -29,8 +29,8 @@ class Topp():
 
         for _ in range(self.number_of_games):
             # randomly shuffle to vary who starts
-            players = [agent1, agent2]
-            random.shuffle(players)
+            
+            players = [agent1, agent2] if self.number_of_games/2 <= _ else [agent2, agent1]
             player1 = players[0]
             player2 = players[1]
             winner = self.play(player1, player2, env)

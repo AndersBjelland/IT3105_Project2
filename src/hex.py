@@ -5,6 +5,7 @@ import numpy as np
 import networkx as nx
 import matplotlib.pyplot as plt
 import random
+import math
 from typing import Tuple, List, Set
 from itertools import product
 
@@ -119,14 +120,15 @@ class Hex(Environment):
     def get_size(self) -> Tuple[int, int]:
         return self.size
 
-    def make_action(self, coordinate: Tuple):
+    def make_action(self, coordinate: Tuple, update_encoding=True):
         if self.value_of(coordinate) != EMPTY:
             print("tried this action {} on this board".format(coordinate))
             self.display_board()
             raise ValueError("Action cannot be made because {} is not empty".format(coordinate))
         self.set_piece(coordinate, owner=self.current_player)
         self.current_player = BLUE if self.current_player == RED else RED
-        self.encoder.update_encoding(coordinate, self)
+        if update_encoding:
+            self.encoder.update_encoding(coordinate, self)
     
 
     def get_NW_coordinates(self, layer=0) -> Tuple[Tuple[int,int]]:
@@ -245,6 +247,25 @@ class Hex(Environment):
 
     def get_neighbours(self, coordinate):
         return self.neighbours[coordinate]
+
+    # To be used in the OHT
+    @staticmethod
+    def create_env_from_state(state, flip, encoder):
+        if flip:
+            state = [1 if value == 2 else 2 if value == 1 else 0 for value in state]
+        current_player = state[0]
+        state = state[1:]
+        size = int (math.sqrt(len(state)))
+        env = Hex((size, size))
+        board = np.array(state).reshape((size,size))
+        if flip:
+            board = board.T
+        env.board = board
+        env.current_player = current_player
+        env.set_encoder(encoder)
+        return env
+
+
 
 
 

@@ -152,14 +152,14 @@ class MCTS():
             self.root = child
             
         else:
-            raise ValueError(action, "is not yet been explored from the current root node")
-            """
-            self.env.make_action(action)
-            current_player = self.env.get_current_player()
-            self.org_env = self.env.copy()
+            #raise ValueError(action, "is not yet been explored from the current root node")
+            new_env = self.root.env.copy()
+            new_env.make_action(action)
             
-            self.root = Node(current_player=current_player)
-            """
+            current_player = new_env.get_current_player()
+            
+            self.root = Node(env=new_env, current_player=current_player)
+            
 
     def perform_simulation(self, rollout_prob:float):
 
