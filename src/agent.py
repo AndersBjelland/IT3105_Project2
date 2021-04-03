@@ -41,7 +41,7 @@ class Agent:
             mcts.set_new_root(action)
         winner = env.get_winner()
         
-        replay_buffer = [entry + (1,) if entry[0].get_current_player() == winner else entry + (-1,) for entry in replay_buffer]
+        replay_buffer = [entry + (1,) if entry[0].get_current_player() == winner else entry + (0,) for entry in replay_buffer]
         
         env.reset()
         
