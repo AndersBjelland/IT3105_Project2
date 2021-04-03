@@ -143,7 +143,7 @@ class Arena:
             
             self.env.make_action(action)
         winner = self.env.get_winner()
-        if player1 == actor1:
+        if player1 == self.actor1:
             print('actor1 is player1')
         else:
             print('actor1 is player2')
