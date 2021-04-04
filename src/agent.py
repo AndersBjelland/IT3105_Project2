@@ -10,6 +10,7 @@ from copy import deepcopy
 import random
 from typing import Dict
 from tensorflow import keras as KER
+import pickle
 
 import math
 
@@ -118,7 +119,14 @@ class Agent:
             self.actor.model.save(file_path+str(i+1)+'.h5')
             self.critic.model.save(file_path+'_critic_'+str(i+1)+'.h5')
 
-    
+
+        # save last replay buffer
+        with open(file_path + 'replay_buffer_6_6.pkl', 'wb') as f:
+            pickle.dump(replay_buffer, f)
+
+
+
+
     def plot_distribution(self, distribution):
         print(distribution)
         plt.figure(figsize=(10,5))
