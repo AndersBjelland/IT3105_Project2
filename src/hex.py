@@ -251,7 +251,7 @@ class Hex(Environment):
     @staticmethod
     def get_symmetries(env, policy):
         state = env.get_state()
-        flipped_env = Hex.create_env_from_state(state, True, env.get_encoder().copy())
+        flipped_env = Hex.create_env_from_state(state, True, env.encoder.copy())
         
         # now flip the policy
         flipped_policy = {(key[1],key[0]) : value for key, value in policy.items()}
