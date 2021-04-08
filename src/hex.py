@@ -248,6 +248,16 @@ class Hex(Environment):
     def get_neighbours(self, coordinate):
         return self.neighbours[coordinate]
 
+    @staticmethod
+    def get_symmetries(env, policy):
+        state = env.get_state()
+        flipped_env = Hex.create_env_from_state(state, True, env.get_encoder().copy())
+        
+        # now flip the policy
+        flipped_policy = {(key[1],key[0]) : value for key, value in policy.items()}
+        return (flipped_env, flipped_policy)
+
+
     # To be used in the OHT
     @staticmethod
     def create_env_from_state(state, flip, encoder):

@@ -93,6 +93,7 @@ class MCTS():
         # Check if state at node is final
         winner = node.env.get_winner()
         if winner > 0:
+            print("returning actual")
             return 1 if winner == node.current_player else -1
         return self.critic.get_value(node.env)
             

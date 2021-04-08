@@ -25,6 +25,8 @@ class Agent:
         
         mcts = MCTS(self.actor, env=env, critic=self.critic)
         replay_buffer = []
+        # to store symmetric states
+        sym_replay = []
 
         while env.get_winner() == 0:
             distribution = mcts.search(n_simulations=n_simulations, rollout_prob=rollout_prob)
@@ -35,14 +37,21 @@ class Agent:
             elif action_strategy == 'probabilistic':
                 action = random.choices(list(distribution.keys()), weights=list(distribution.values()), k=1)[0]
             
+            flipped_env, flipped_policy = Hex.get_symmetries(env, distribution)
+
+    
             replay_buffer.append((env.copy(), distribution))
+            sym_replay.append((flipped_env.copy(), flipped_policy))
             
             env.make_action(action)
             
             mcts.set_new_root(action)
         winner = env.get_winner()
-        
+
         replay_buffer = [entry + (1,) if entry[0].get_current_player() == winner else entry + (0,) for entry in replay_buffer]
+        
+        sym_winner = 1 if winner == 2 else 2
+        sym_replay = [entry + (1,) if entry[0].get_current_player() == sym_winner else entry + (0,) for entry in sym_replay]
         
         env.reset()
         
