@@ -57,9 +57,9 @@ class Agent:
         
         return replay_buffer
 
-    def train_agent(self, env: Hex, n_episodes:int, n_simulations: int, start_rollout_prob: float, end_rollout_prob:float, epochs=1, M=1, file_path='', compete=False, compete_rate=10, threshold=0.55, compete_num_games=50):
+    def train_agent(self, env: Hex, n_episodes:int, n_simulations: int, start_rollout_prob: float, end_rollout_prob:float, epochs=1, M=1, file_path='', compete=False, compete_rate=10, threshold=0.55, compete_num_games=50, old_replay=None):
 
-        replay_buffer = []
+        replay_buffer = [] if old_replay is None else old_replay
         epsilon_decay_factor = (self.actor.epsilon - self.actor.end_epsilon)/n_episodes
         save_model_interval = math.floor(n_episodes/(M-1))
         
