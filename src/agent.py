@@ -96,8 +96,8 @@ class Agent:
                 arena = Arena(self, current_best_agent, env, num_games=compete_num_games)
                 print("---------------competing-----------")
                 dist = arena.play_games(search_in_comp,simulations_in_comp)
-                print("new_model won " + str(100*dist[self.actor]) + "%")
-                print("current best won " + str(100*dist[current_best_actor]) + "%")
+                print("new_model won " + str(100*dist[self]) + "%")
+                print("current best won " + str(100*dist[current_best_agent]) + "%")
                 print(dist)
                 if dist[self.actor] < threshold: 
                     print("------------new model did not beat current best-----------")
@@ -172,7 +172,7 @@ class Arena:
         if player1 == self.agent1:
             print('agent1 is player1')
         else:
-            print('agent2 is player2')
+            print('agent1 is player2')
         print("winner: ", winner)
         self.env.reset()
         return winner
