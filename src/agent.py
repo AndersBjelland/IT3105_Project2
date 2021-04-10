@@ -192,6 +192,7 @@ class Arena:
                 winner_scores[player1] += 1
             else:
                 winner_scores[player2] += 1
+            print(winner_scores)
         
         # normalize winner scores
         winner_scores[player1] /= self.num_games
