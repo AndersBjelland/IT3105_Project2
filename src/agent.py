@@ -99,7 +99,7 @@ class Agent:
                 print("new_model won " + str(100*dist[self]) + "%")
                 print("current best won " + str(100*dist[current_best_agent]) + "%")
                 print(dist)
-                if dist[self.actor] < threshold: 
+                if dist[self] < threshold: 
                     print("------------new model did not beat current best-----------")
                     self.actor.model = current_best_actor_nn
                     self.critic.model = current_best_critic_nn
@@ -171,8 +171,10 @@ class Arena:
         winner = self.env.get_winner()
         if player1 == self.agent1:
             print('agent1 is player1')
+            x = "agent1" if winner == 1 else "agent2"
         else:
             print('agent1 is player2')
+            x = "agent1" if winner == 2 else "agent2"
         print("winner: ", winner)
         self.env.reset()
         return winner
