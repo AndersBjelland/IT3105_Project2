@@ -249,13 +249,32 @@ class Hex(Environment):
         return self.neighbours[coordinate]
 
     @staticmethod
-    def get_symmetries(env, policy):
+    def get_symmetries(env, policy) -> Tuple['Hex', 'policy']:
+        flipped = env.copy()
+        flipped.board = env.get_board().T
+        flipped_policy = {(key[1], key[0]) : value for key, value in policy.items()}
+
+        return flipped, flipped_policy
+
+    @staticmethod
+    def flip(env, policy, axis:int) -> Tuple['Hex', 'policy']:
+        # axis 0 flips rows, axis 1 flips columns
+        flipped_env = Hex(env.size)
         state = env.get_state()
-        flipped_env = Hex.create_env_from_state(state, True, env.encoder.copy())
-        
-        # now flip the policy
-        flipped_policy = {(key[1],key[0]) : value for key, value in policy.items()}
+        current_player = state[0]
+        state = state[1:]
+        board = np.array(state).reshape(env.size)
+        board = np.flip(board,axis)
+        flipped_env.board = board
+        flipped_env.current_player = current_player
+        flipped_env.set_encoder(env.encoder)
+
+        # flip the policy
+        mapper = lambda x,y : (x,env.size[1]-y) if axis else (env.size[0] - x, y)
+        flipped_policy = {mapper(key[0], key[1]) : value for key, value in policy.items()}
+
         return (flipped_env, flipped_policy)
+
 
 
     # To be used in the OHT

@@ -42,6 +42,7 @@ class Agent:
     
             replay_buffer.append((env.copy(), distribution))
             sym_replay.append((flipped_env.copy(), flipped_policy))
+
             
             env.make_action(action)
             
@@ -50,8 +51,22 @@ class Agent:
 
         replay_buffer = [entry + (1,) if entry[0].get_current_player() == winner else entry + (0,) for entry in replay_buffer]
         
-        sym_winner = 1 if winner == 2 else 2
-        sym_replay = [entry + (1,) if entry[0].get_current_player() == sym_winner else entry + (0,) for entry in sym_replay]
+        
+        sym_replay = [entry + (1,) if entry[0].get_current_player() == winner else entry + (0,) for entry in sym_replay]
+
+        print("org")
+        replay_buffer[3][0].display_board()
+        print(replay_buffer[3][1])
+        print(replay_buffer[3][2])
+        print(replay_buffer[3][0].current_player)
+
+        print("sym")
+        sym_replay[3][0].display_board()
+        print(sym_replay[3][1])
+        print(sym_replay[3][2])
+        print(sym_replay[3][0].current_player)
+
+        raise Exception("bang")
         
         env.reset()
         
