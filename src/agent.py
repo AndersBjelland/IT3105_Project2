@@ -48,7 +48,7 @@ class Agent:
         
         return replay_buffer
 
-    def train_agent(self, env: Hex, n_episodes:int, n_simulations: int, start_rollout_prob: float, end_rollout_prob:float, epochs=1, M=1, file_path='', compete=False, compete_rate=10, threshold=0.55, compete_num_games=50, old_replay=None):
+    def train_agent(self, env: Hex, n_episodes:int, n_simulations: int, start_rollout_prob: float, end_rollout_prob:float, epochs=1, M=1, file_path='', compete=False, compete_rate=10, threshold=0.55, compete_num_games=50, old_replay=None, search_in_comp=True, simulations_in_comp=100):
 
         replay_buffer = [] if old_replay is None else old_replay
         epsilon_decay_factor = (self.actor.epsilon - self.actor.end_epsilon)/n_episodes
@@ -93,7 +93,7 @@ class Agent:
                 current_best_actor = Actor(encoder=env.encoder, load_from=file_path + 'checkpointActor' + str(best_index) + '.h5')
                 arena = Arena(self.actor, current_best_actor, env, num_games=compete_num_games)
                 print("---------------competing-----------")
-                dist = arena.play_games()
+                dist = arena.play_games(search_in_comp,simulations_in_comp)
                 print("new_model won " + str(100*dist[self.actor]) + "%")
                 print("current best won " + str(100*dist[current_best_actor]) + "%")
                 print(dist)
@@ -136,40 +136,54 @@ class Agent:
 
 class Arena:
 
-    def __init__(self, actor1, actor2, env, num_games=50):
-        self.actor1 = actor1
-        self.actor2 = actor2
+    def __init__(self, agent1, agent2, env, num_games=50):
+        self.agent1 = agent1
+        self.agent2 = agent2
         self.env = env.copy()
         self.num_games = num_games
 
-    def play_game(self, player1, player2):
+    def play_game(self, player1, player2, search, n_simulations):
+        if search:
+            mcts1 = MCTS(player1.actor, self.env, player1.critic)
+            mcts2 = MCTS(player2.actor, self.env, player2.critic)
+
         while self.env.get_winner() == 0:
             if self.env.current_player == 1:
-                action = player1.get_action(self.env)
+                if search:
+                    dist = mcts1.search(n_simulations, 0)
+                    action = max(dist, key=dist.get)
+                    mcts1.set_new_root(action)
+                else:
+                    action = player1.actor.get_action(self.env)
             else:
-                action = player2.get_action(self.env)
+                if search:
+                    dist = mcts2.search(n_simulations, 0)
+                    action = max(dist, key=dist.get)
+                    mcts2.set_new_root(action)
+                else:
+                    action = player2.actor.get_action(self.env)
             
             self.env.make_action(action)
         winner = self.env.get_winner()
-        if player1 == self.actor1:
-            print('actor1 is player1')
+        if player1 == self.agent1:
+            print('agent1 is player1')
         else:
-            print('actor1 is player2')
+            print('agent2 is player2')
         print("winner: ", winner)
         self.env.reset()
         return winner
 
-    def play_games(self):
-        winner_scores = {self.actor1:0, self.actor2:0}
+    def play_games(self, search, n_simulations):
+        winner_scores = {self.agent1:0, self.agent2:0}
 
         for _ in range(self.num_games):
             
             # Let player 1 and 2 be the starting player for the same number of games
-            players = [self.actor1, self.actor2] if self.num_games/2 <= _ else [self.actor2, self.actor1]
+            players = [self.agent1, self.agent2] if self.num_games/2 <= _ else [self.agent2, self.agent1]
             
             player1 = players[0]
             player2 = players[1]
-            winner = self.play_game(player1, player2)
+            winner = self.play_game(player1, player2, search, n_simulations)
             if winner == 1:
                 winner_scores[player1] += 1
             else:
