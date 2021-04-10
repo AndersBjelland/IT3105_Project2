@@ -175,7 +175,7 @@ class Arena:
         else:
             print('agent1 is player2')
             x = "agent1" if winner == 2 else "agent2"
-        print("winner: ", winner)
+        print("winner: ", x)
         self.env.reset()
         return winner
 
@@ -194,7 +194,6 @@ class Arena:
                 winner_scores[player1] += 1
             else:
                 winner_scores[player2] += 1
-            print(winner_scores)
         
         # normalize winner scores
         winner_scores[player1] /= self.num_games
