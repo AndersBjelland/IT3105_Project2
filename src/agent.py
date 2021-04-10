@@ -155,6 +155,7 @@ class Arena:
                     dist = mcts1.search(n_simulations, 0)
                     action = max(dist, key=dist.get)
                     mcts1.set_new_root(action)
+                    mcts2.set_new_root(action)
                 else:
                     action = player1.actor.get_action(self.env)
             else:
@@ -162,6 +163,7 @@ class Arena:
                     dist = mcts2.search(n_simulations, 0)
                     action = max(dist, key=dist.get)
                     mcts2.set_new_root(action)
+                    mcts1.set_new_root(action)
                 else:
                     action = player2.actor.get_action(self.env)
             
