@@ -205,6 +205,11 @@ class Encoder(metaclass = abc.ABCMeta):
 
 
 class SimpleHexEncoder(Encoder):
+
+    def __init__(self, padding):
+        super().__init__(padding)
+        self.planes = None
+        self.padded_env = None
     
     def encode(self, env: Hex) -> 'tensor':
         """
@@ -224,16 +229,45 @@ class SimpleHexEncoder(Encoder):
         red = self.player_stones_encoding(2, env=env)
         empty = self.player_stones_encoding(0, env=env)
 
-        to_play_blue = self.to_play_encoding(1, env=env, size=env.size)
-        to_play_red = self.to_play_encoding(2, env=env, size=env.size)
+        to_play_blue = np.array(self.to_play_encoding(1, env=env, size=env.size))
+        #to_play_red = self.to_play_encoding(2, env=env, size=env.size)
 
-        planes = [blue, red, empty, to_play_blue]
+        planes = [blue, red, to_play_blue]
+        self.planes = planes
 
         self.encoding = self.convert_planes_to_tensor(planes)
         return self.encoding
     
     def update_encoding(self, coordinate, env):
-        self.encode(env)
+        """  move_made_by = 1 if env.current_player == 2 else 2
+
+        scaled_coordinate = self.coordinate_scaler(coordinate)
+        # update red and blue piece encoding
+        if move_made_by == 1:
+            self.planes[0][scaled_coordinate[0]][scaled_coordinate[1]] = 1
+        else:
+            self.planes[1][scaled_coordinate[0]][scaled_coordinate[1]] = 1
+
+        # update empty
+        self.planes[2][scaled_coordinate[0]][scaled_coordinate[1]] = 0
+
+        # update who's turn it is
+        if env.current_player == 1:
+            turn_plane = np.ones(self.planes[0].shape)
+        else:
+            turn_plane = np.zeros(self.planes[0].shape)
+        self.planes[3] = turn_plane
+
+        feat = np.concatenate(self.planes, axis=2).astype(float)
+        feat = np.expand_dims(feat, axis=0)
+        self.encoding = tf.convert_to_tensor(feat)
+
+       # self.encoding = self.convert_planes_to_tensor(self.planes) """
+
+        return self.encode(env)
+
+       
+    
 
     def copy(self):
         enc = SimpleHexEncoder(padding=self.padding)
