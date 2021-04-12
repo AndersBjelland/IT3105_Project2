@@ -57,7 +57,7 @@ class Actor:
             self.model.compile(optimizer=opt(lr=self.learning_rate), loss=loss, metrics=['accuracy'])
 
     def get_action(self, env):
-        feature_maps = env.encoder.get_encoding()
+        feature_maps = env.encoder.get_encoding() #self.encoder.encode(env) # env.encoder.get_encoding()
 
         prob_dist = self.model(feature_maps).numpy().reshape((-1,))
     
@@ -69,6 +69,8 @@ class Actor:
         # Return an action in a epsilon greedy manner
         if random.random() <= self.epsilon:
             return random.choice(list(prob_dist.keys()))
+
+        
         
         return max(prob_dist, key=prob_dist.get)
         

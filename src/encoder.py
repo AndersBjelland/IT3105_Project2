@@ -35,7 +35,7 @@ class Encoder(metaclass = abc.ABCMeta):
         new_size = (current_env_size[0] + padding*2, current_env_size[1] + padding*2)
         coordinate_scaler = lambda x: (x[0] + padding, x[1] + padding) # coresponding coordinate in new env
 
-        new_env = Hex(new_size, env.start_player)
+        new_env = Hex(new_size, env.current_player)
 
         # Iterate of cells in old env and set corresponding cells in new
         for coordinate in env.get_coordinates():
@@ -216,6 +216,7 @@ class SimpleHexEncoder(Encoder):
         """
 
         padding = self.padding
+        
 
         env = self.create_padded_env(env=env, padding=padding)
 
@@ -226,17 +227,18 @@ class SimpleHexEncoder(Encoder):
         to_play_blue = self.to_play_encoding(1, env=env, size=env.size)
         to_play_red = self.to_play_encoding(2, env=env, size=env.size)
 
-        planes = [blue, red, empty, to_play_blue, to_play_red]
+        planes = [blue, red, empty, to_play_blue]
 
-        # Create new axis in all planes
-        for i in range(len(planes)):
-            planes[i] = np.expand_dims(planes[i], axis=2)
-
-        feat = np.concatenate(planes, axis=2).astype(float)
-        feat = np.expand_dims(feat, axis=0)
-        # convert to tensor
-        self.encoding = tf.convert_to_tensor(feat)
+        self.encoding = self.convert_planes_to_tensor(planes)
         return self.encoding
+    
+    def update_encoding(self, coordinate, env):
+        self.encode(env)
+
+    def copy(self):
+        enc = SimpleHexEncoder(padding=self.padding)
+        enc.encoding = tf.identity(self.encoding)
+        return enc
 
     
 
@@ -373,3 +375,8 @@ class DemoEncoder(Encoder):
 
     def update_encoding(self, coordinate, env):
         self.encode(env)
+
+    def copy(self):
+        enc = DemoEncoder()
+        enc.encoding = tf.identity(self.encoding)
+        return enc
