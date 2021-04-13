@@ -25,6 +25,11 @@ def copy_model(model, loss):
     new_model.set_weights(model.get_weights())
     return new_model
 
+def normalize(l):
+    s = sum(l)
+    l = [e/s for e in l]
+    return l
+
 
 
 

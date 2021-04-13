@@ -1,6 +1,7 @@
 from .hex import Hex
 from .nim import Nim
 from .node import Node
+from .helpers import normalize
 
 from typing import Callable, List, Tuple, Dict
 import numpy as np
@@ -67,6 +68,24 @@ class MCTS():
         if node.env.get_winner():
             return node
 
+        if node.prior is None:
+            node.prior = self.target_policy.get_prior(node.env)
+
+        available_actions = [action for action in node.env.available_actions()]
+        masked_actions = []
+        probs = []
+        for i in range(len(node.prior)):
+            if node.get_child(available_actions[i]) is None:
+                masked_actions.append(available_actions[i])
+                probs.append(node.prior[i])
+        probs = normalize(probs)
+        action = random.choices(population=masked_actions, weights=probs, k=1)[0]
+
+        new_env = node.env.copy()
+        new_env.make_action(action)
+        return Node(env=new_env, current_player = new_env.get_current_player(), parent=node, action=action)
+
+        """
         # Get actions that are not yet taken from the node we expand
         actions = [action for action in node.env.available_actions() if node.get_child(action) is None]
         action = random.choice(actions)
@@ -74,7 +93,7 @@ class MCTS():
         new_env.make_action(action)
         
         return Node(env=new_env, current_player = new_env.get_current_player(), parent=node, action=action)
-
+        """
     def _rollout(self, node: Node) -> int:
         player = node.env.get_current_player()
         env = node.env.copy()

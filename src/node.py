@@ -11,6 +11,7 @@ class Node():
         self.children = {} # {action:node}
         self.q_values = {} # {action:q_value}
         self.set_depth()
+        self.prior = None #{action:priorProb}
         
         # Number of times the edge from parent to this node has been traversed, 
         # for the root this can be interpreted as number of times traversed into the tree

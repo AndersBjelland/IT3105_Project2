@@ -227,7 +227,6 @@ class SimpleHexEncoder(Encoder):
 
         blue = self.player_stones_encoding(1, env=env)
         red = self.player_stones_encoding(2, env=env)
-        empty = self.player_stones_encoding(0, env=env)
 
         to_play_blue = np.array(self.to_play_encoding(1, env=env, size=env.size))
         #to_play_red = self.to_play_encoding(2, env=env, size=env.size)
@@ -386,15 +385,14 @@ class HexEncoder(Encoder):
         return self._coordinate_bridge_encoding(piece_owner, coordinate[0], coordinate[1], env, plane_type, plane)
 
 
-
 class DemoEncoder(Encoder):
 
     def encode(self, env: Hex):
-        player = env.get_current_player()
-        encoding = []
+        player_enc = 1 if  env.get_current_player() == 1 else 0
+        encoding = [player_enc]
         for coordinate in env.get_coordinates():
             value = env.value_of(coordinate)
-            if value == player:
+            if value == 1:
                 one_hot = [1,1]
             elif value == 0:
                 one_hot = [0,0]

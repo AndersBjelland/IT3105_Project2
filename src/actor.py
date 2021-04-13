@@ -73,8 +73,18 @@ class Actor:
         
         
         return max(prob_dist, key=prob_dist.get)
+
+    def get_prior(self, env):
+        feature_maps = env.encoder.get_encoding() #self.encoder.encode(env) # env.encoder.get_encoding()
+        prob_dist = self.model(feature_maps).numpy().reshape((-1,))
+
+        # legal moves is a list with tuples like [ (1, (1,2)), (0,(0,0)) ]
+        legal_moves = env.available_actions_binary()
         
-        
+        # only include probs that represent legal actions
+        prob_dist = [prob_dist[i] for i in range(len(prob_dist)) if legal_moves[i][0]]
+
+        return prob_dist
 
     def end_of_episode(self, replay_buffer, epochs=1, batch_size=128):
         x,y = self.convert_to_network_input(replay_buffer)
