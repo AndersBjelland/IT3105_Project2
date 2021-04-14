@@ -100,7 +100,7 @@ impl HexRepr for Normalized {
                 for plane in 0..=1 {
                     for position in &self.moves[plane] {
                         self.inner
-                            .set(&[position.x as u64, position.y as u64, plane as u64], 1.0)
+                            .set(&[position.y as u64, position.x as u64, plane as u64], 1.0)
                     }
                 }
             }
@@ -108,8 +108,20 @@ impl HexRepr for Normalized {
                 for plane in 0..=1 {
                     for position in &self.moves[1 - plane] {
                         self.inner
-                            .set(&[position.y as u64, position.x as u64, plane as u64], 1.0);
+                            .set(&[position.x as u64, position.y as u64, plane as u64], 1.0);
                     }
+                }
+            }
+        }
+
+        let count = self.inner.dims.iter().product::<u64>() as usize;
+        // We are responsible for providing the shape, so
+        let size = *self.inner.dims.first().unwrap();
+        let mut inner = vec![0.0; count];
+        for x in 0..size {
+            for y in 0..size {
+                for z in 0..2 {
+                    inner.push(self.inner.get(&[x, y, z]));
                 }
             }
         }

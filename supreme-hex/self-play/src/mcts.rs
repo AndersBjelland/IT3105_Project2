@@ -45,10 +45,7 @@ impl<R: HexRepr> LeafEvaluator<R> for Rollout<R> {
     }
 
     fn init(&mut self, state: Hex<R>) {
-        debug!(
-            "initializing rollout with state where p1 = {}, p2 = {}",
-            state.player1, state.player2
-        );
+        debug!("init rollout p1 = {} p2 = {}", state.player1, state.player2);
         self.state = Some(state);
     }
 
@@ -167,13 +164,13 @@ pub struct Sample {
     pub winner: Player,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ExpandMode {
     WithNoise,
     WithoutNoise,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Status {
     /// Status representing the case where the MCTS is awaiting evaluation of a leaf node, such that it can
     /// update all edges with the prior probabilities
@@ -310,7 +307,7 @@ impl<R: HexRepr + Debug, L: LeafEvaluator<R>> MCTS<R, L> {
 
     /// The action according to PUCT. Returns none if the node has no children,
     /// which is equivalent to it being a child node.
-    fn puct_policy<'a>(&self, node: &'a Node, player: &Player) -> Option<(usize, &'a Edge)> {
+    fn puct_policy<'a>(&self, node: &'a Node) -> Option<(usize, &'a Edge)> {
         node.edges
             .iter()
             .enumerate()
@@ -361,7 +358,7 @@ impl<R: HexRepr + Debug, L: LeafEvaluator<R>> MCTS<R, L> {
                     self.intree_traversal();
                     self.start_expansion(ExpandMode::WithoutNoise)
                 } else {
-                    self.execute_step()
+                    self.execute_step(None)
                 }
             }
         }
@@ -369,6 +366,14 @@ impl<R: HexRepr + Debug, L: LeafEvaluator<R>> MCTS<R, L> {
 
     pub fn root_policy(&self) -> Vec<(Position, f64)> {
         let root = &self.nodes[0];
+        root.edges
+            .iter()
+            .map(|e| (e.action, (e.n as f64) / (root.n as f64)))
+            .collect()
+    }
+
+    pub fn current_policy(&self) -> Vec<(Position, f64)> {
+        let root = &self.nodes[self.root];
         root.edges
             .iter()
             .map(|e| (e.action, (e.n as f64) / (root.n as f64)))
@@ -417,11 +422,22 @@ impl<R: HexRepr + Debug, L: LeafEvaluator<R>> MCTS<R, L> {
         samples
     }
 
-    fn execute_step(&mut self) -> Option<Vec<Sample>> {
-        let edge = self.policy(&self.nodes[self.current]);
-        let edge = match edge {
-            Some(e) => e,
-            None => panic!("{:?}", &self.nodes[self.current]),
+    pub fn execute_step(&mut self, action: Option<Position>) -> Option<Vec<Sample>> {
+        let edge = match action {
+            None => {
+                let edge = self.policy(&self.nodes[self.current]);
+                match edge {
+                    Some(e) => e,
+                    None => panic!("{:?}", &self.nodes[self.current]),
+                }
+            }
+            Some(action) => {
+                let node = &self.nodes[self.root];
+                match node.edges.iter().find(|x| x.action == action) {
+                    Some(e) => e,
+                    None => panic!("{:?} is not part of the edges {:?}", action, &node.edges),
+                }
+            }
         };
 
         let state = self.state.as_mut().unwrap();
@@ -485,7 +501,7 @@ impl<R: HexRepr + Debug, L: LeafEvaluator<R>> MCTS<R, L> {
         // This is to make the borrow checker happy
         let mut state = self.state.take().expect("should be some");
         loop {
-            match self.puct_policy(&self.nodes[self.current], &state.current) {
+            match self.puct_policy(&self.nodes[self.current]) {
                 Some((i, edge)) => {
                     state.place(edge.action);
                     self.in_tree_path.push(i);
@@ -544,7 +560,7 @@ impl<R: HexRepr + Debug, L: LeafEvaluator<R>> MCTS<R, L> {
         let state = self.state.take().expect("non-empty by construction");
 
         debug!(
-            "starting evaluation of state with p1 = {}, p2 = {}",
+            "starting evaluation of p1 = {}, p2 = {}",
             state.player1, state.player2
         );
 

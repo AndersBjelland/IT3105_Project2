@@ -1,6 +1,6 @@
 use std::{cell::UnsafeCell, fmt::Debug, marker::PhantomData, ops::Range};
 
-use log::{debug, error};
+use log::debug;
 use tensorflow as tf;
 use tf::{OutputName, Status};
 
@@ -137,8 +137,8 @@ impl PolicyEvaluation {
     /// TODO: Generalize
     pub fn get_index(size: usize, action: &Position, player: &Player) -> usize {
         match player {
-            Player::One => action.y + size * action.x,
-            Player::Two => action.x + size * action.y,
+            Player::One => action.x + size * action.y,
+            Player::Two => action.y + size * action.x,
         }
     }
 }
@@ -365,7 +365,7 @@ where
         })
     }
 
-    fn evaluate(
+    pub fn evaluate(
         &mut self,
     ) -> Result<
         (
@@ -439,15 +439,6 @@ where
             for (mcts, evaluation) in self.tree_searches.iter_mut().zip(evaluations) {
                 match mcts.resume(Some(&evaluation)) {
                     Some(samples) => {
-                        if samples.len() < self.root.size
-                            || samples.len() > self.root.size * self.root.size + 1
-                        {
-                            error!(
-                                "received impossible set of samples (len = {}): {:?}",
-                                samples.len(),
-                                &samples
-                            );
-                        }
                         debug!("received samples: {:?}", &samples);
 
                         generated.extend(samples)
@@ -458,6 +449,173 @@ where
         }
 
         generated
+    }
+}
+
+/// A wrapper over a runtime that is suited for single-state evaluations
+#[derive(Debug)]
+pub struct Agent<E: Encoder + Debug, L: LeafEvaluator<E>> {
+    runtime: Runtime<E, L>,
+}
+
+impl<E, L> Agent<E, L>
+where
+    E: Encoder + Debug,
+    L: LeafEvaluator<E>,
+{
+    pub fn new(runtime: Runtime<E, L>) -> Self {
+        assert!(runtime.tree_searches.len() == 1);
+        Agent { runtime }
+    }
+
+    pub fn predict(&mut self, root: Hex<()>) -> (Vec<Vec<f64>>, f64) {
+        let size = root.size;
+
+        let inner = E::new(
+            unsafe { self.runtime.input_batch.split_batch() }
+                .unwrap()
+                .swap_remove(0),
+        );
+        let mut state = Hex::empty(root.size, inner);
+
+        // We will construct a new hex game, the same inner hex state.
+        let mut placed1 = Vec::new();
+        let mut placed2 = Vec::new();
+        for x in 0..size {
+            for y in 0..size {
+                let position = Position { x, y };
+
+                if root.is_occupied(position, Player::One) {
+                    placed1.push(position);
+                }
+
+                if root.is_occupied(position, Player::Two) {
+                    placed2.push(position);
+                }
+            }
+        }
+
+        assert!(placed1.len() == placed2.len() || placed1.len() == placed2.len() + 1);
+        let mut it1 = placed1.into_iter();
+        let mut it2 = placed2.into_iter();
+
+        loop {
+            match (it1.next(), it2.next()) {
+                (Some(a), Some(b)) => {
+                    state.place(a);
+                    state.place(b);
+                }
+                (Some(a), _) => state.place(a),
+                (None, None) => break,
+                _ => unreachable!("this should not happen"),
+            }
+        }
+
+        state.inner.finalize();
+
+        // Perform evaluation. _p, and _v are kept such that the inner tensor doesn't go out of scope.
+        let (_p, _v, evaluations) = self.runtime.evaluate().expect("evaluation should not fail");
+
+        let evaluation = &evaluations[0];
+
+        let value = evaluation.value.get() as f64;
+        let mut policy = vec![vec![0.0; size]; size];
+
+        for y in 0..size {
+            for x in 0..size {
+                policy[y][x] = evaluation
+                    .policy
+                    .get(size, &Position { x, y }, &root.current)
+                    as f64;
+            }
+        }
+
+        /*panic!("{:?}\n{:?}\n{:?}\n", state.minimal(), value, policy);*/
+
+        (policy, value)
+    }
+
+    pub fn policy_distribution(&mut self, root: Hex<()>) -> Vec<(Position, f64)> {
+        let size = root.size;
+        // Drop the old MCTS tree
+        let mcts = self.runtime.tree_searches.drain(..).next().unwrap();
+        let config = mcts.config;
+
+        let inner = E::new(
+            unsafe { self.runtime.input_batch.split_batch() }
+                .unwrap()
+                .swap_remove(0),
+        );
+        let mut mcts = MCTS::new(
+            Hex::empty(root.size, ()).with_inner(inner),
+            L::new(),
+            config,
+        );
+        // We will construct a new hex game, the same inner hex state.
+
+        let mut placed1 = Vec::new();
+        let mut placed2 = Vec::new();
+        let state = mcts.state.as_mut().unwrap();
+        for x in 0..size {
+            for y in 0..size {
+                let position = Position { x, y };
+
+                if root.is_occupied(position, Player::One) {
+                    placed1.push(position);
+                }
+
+                if root.is_occupied(position, Player::Two) {
+                    placed2.push(position);
+                }
+            }
+        }
+
+        assert!(placed1.len() == placed2.len() || placed1.len() == placed2.len() + 1);
+        let mut it1 = placed1.into_iter();
+        let mut it2 = placed2.into_iter();
+
+        loop {
+            match (it1.next(), it2.next()) {
+                (Some(a), Some(b)) => {
+                    state.place(a);
+                    state.place(b);
+                }
+                (Some(a), _) => state.place(a),
+                (None, None) => break,
+                _ => unreachable!("this should not happen"),
+            }
+        }
+
+        let policy = loop {
+            match mcts.state.as_mut() {
+                Some(state) => state.inner.finalize(),
+                None => (),
+            }
+
+            match mcts.leaf_evaluator.state_mut() {
+                Some(state) => state.inner.finalize(),
+                None => (),
+            }
+
+            // Perform evaluation. _p, and _v are kept such that the inner tensor doesn't go out of scope.
+            let (_p, _v, evaluations) =
+                self.runtime.evaluate().expect("evaluation should not fail");
+
+            let evaluation = &evaluations[0];
+
+            // We're interested in the policy from the root node
+            if mcts.simulations_done == mcts.config.simulations
+                && mcts.status == mcts::Status::FinishedSimulation
+            {
+                break mcts.current_policy();
+            }
+
+            let _ = mcts.resume(Some(&evaluation));
+        };
+
+        self.runtime.tree_searches.push(mcts);
+
+        policy
     }
 }
 

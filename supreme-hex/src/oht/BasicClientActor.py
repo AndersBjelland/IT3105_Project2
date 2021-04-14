@@ -6,8 +6,9 @@ import numpy as np
 
 class BasicClientActor(BasicClientActorAbs):
 
-    def __init__(self, agent, IP_address=None, verbose=True):
+    def __init__(self, agent, IP_address=None, verbose=True, conversion=lambda s: s):
         self.agent = agent
+        self.conversion = conversion
         self.series_id = -1
         BasicClientActorAbs.__init__(self, IP_address, verbose=verbose)
 
@@ -21,6 +22,12 @@ class BasicClientActor(BasicClientActorAbs):
         then you will see a 2 here throughout the entire series, whereas player 1 will see a 1.
         :return: Your actor's selected action as a tuple (row, column)
         """
+        (flip, state) = self.conversion(state)
+
+        (x, y) = self.agent.policy(state)
+
+        return (y, x) if flip else (x, y)
+
         player, *board = state
 
         assert len(board) == self.size * self.size
@@ -42,20 +49,8 @@ class BasicClientActor(BasicClientActorAbs):
             grid[twos] = 1
 
         (x, y) = self.agent.policy(grid)
+
         return (y, x) if flip else (x, y)
-        print(grid)
-        return self.agent.policy(grid)
-        # This is an example player who picks random moves. REMOVE THIS WHEN YOU ADD YOUR OWN CODE !!
-        next_move = tuple(self.pick_random_free_cell(
-            state, size=int(math.sqrt(len(state)-1))))
-        #############################
-        #
-        #
-        # YOUR CODE HERE
-        #
-        # next_move = ???
-        ##############################
-        return next_move
 
     def handle_series_start(self, unique_id, series_id, player_map, num_games, game_params):
         """
@@ -79,13 +74,6 @@ class BasicClientActor(BasicClientActorAbs):
             'num_games': num_games,
             'game_params': game_params
         })
-        #############################
-        #
-        #
-        # YOUR CODE (if you have anything else) HERE
-        #
-        #
-        ##############################
 
     def handle_game_start(self, start_player):
         """
@@ -94,13 +82,6 @@ class BasicClientActor(BasicClientActorAbs):
         """
         self.starting_player = start_player
         print(f'game start with initial player {start_player}')
-        #############################
-        #
-        #
-        # YOUR CODE (if you have anything else) HERE
-        #
-        #
-        ##############################
 
     def handle_game_over(self, winner, end_state):
         """
@@ -110,13 +91,6 @@ class BasicClientActor(BasicClientActorAbs):
         :param end_state: Final state of the board.
         :return:
         """
-        #############################
-        #
-        #
-        # YOUR CODE HERE
-        #
-        #
-        ##############################
         print("Game over, these are the stats:")
         print('Winner: ' + str(winner))
         print('End state: ' + str(end_state))
@@ -127,13 +101,6 @@ class BasicClientActor(BasicClientActorAbs):
         :param stats: The actor statistics for a series = list of tuples [(unique_id, series_id, wins, losses)...]
         :return:
         """
-        #############################
-        #
-        #
-        # YOUR CODE HERE
-        #
-        #
-        #############################
         print("Series ended, these are the stats:")
         print(str(stats))
 
@@ -143,13 +110,6 @@ class BasicClientActor(BasicClientActorAbs):
         :param score: The actor score for the tournament
         :return:
         """
-        #############################
-        #
-        #
-        # YOUR CODE HERE
-        #
-        #
-        #############################
         print("Tournament over. Your score was: " + str(score))
 
     def handle_illegal_action(self, state, illegal_action):
@@ -160,13 +120,6 @@ class BasicClientActor(BasicClientActorAbs):
         :param action: The illegal action
         :return:
         """
-        #############################
-        #
-        #
-        # YOUR CODE HERE
-        #
-        #
-        #############################
         print("An illegal action was attempted:")
         print('State: ' + str(state))
         print('Action: ' + str(illegal_action))

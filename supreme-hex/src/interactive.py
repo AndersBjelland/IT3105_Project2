@@ -46,7 +46,7 @@ def play(game: Hex, agent, heat=lambda edge: edge.N):
         fig.canvas.flush_events()
 
     def on_key_press(event):
-        nonlocal game, fig, ax, heat
+        nonlocal game, fig, ax, heat, heatmap
         if event.key == 'escape':
             plt.close()
             return
@@ -66,6 +66,39 @@ def play(game: Hex, agent, heat=lambda edge: edge.N):
         if event.key == 'r':
             game = original
             redraw()
+            return
+
+        if event.key == 'z':
+            heatmap *= 0
+            (distribution, z) = agent.prediction(game)
+            print(
+                f'predicted z = {z} (+1 if player {game.current_player} wins, -1 if the other does)')
+            for (x, y) in game.available_actions():
+                heatmap[x, y] = distribution[y][x]
+
+            scatter = fig.gca().scatter(X, Y, s=64**2 * (4 / game.size)**2, c=heatmap.reshape((-1,)),
+                                        cmap=policy_cmap, edgecolor='none', zorder=200, marker='H')
+
+            fig.canvas.draw()
+            fig.canvas.flush_events()
+
+            scatter.remove()
+            return
+
+        if event.key == 'd':
+            heatmap *= 0
+            distribution = agent.policy_distribution(game)
+
+            for (x, y) in game.available_actions():
+                heatmap[x, y] = distribution[y][x]
+
+            scatter = fig.gca().scatter(X, Y, s=64**2 * (4 / game.size)**2, c=heatmap.reshape((-1,)),
+                                        cmap=policy_cmap, edgecolor='none', zorder=200, marker='H')
+
+            fig.canvas.draw()
+            fig.canvas.flush_events()
+
+            scatter.remove()
             return
 
         if event.key == ' ':

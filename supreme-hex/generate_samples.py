@@ -8,7 +8,7 @@ def generate_samples(model_path, out_path, size, samples, simulations, concurren
     N = 216 * concurrents if samples is None else samples
     start = time.time()
     self_play.run_save(model_path=model_path, out_path=out_path, size=size, concurrents=concurrents, simulations=simulations,
-                       samples=N, leaf_evaluation='value_fn', encoder='normalized')
+                       samples=N, leaf_evaluation=leaf_evaluation, encoder=encoder)
 
     end = time.time()
     throughput = N / (end - start)

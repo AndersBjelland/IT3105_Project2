@@ -27,8 +27,58 @@ class Actor:
     def policies(self, states):
         return [self.policy(state) for state in states]
 
+    def reset(self):
+        return
 
-class SFAgent(Actor):
+    def notify_move(self, move):
+        return
+
+
+class SFGameSession(Actor):
+    def __init__(self,
+                 leaf_evaluation,
+                 encoder,
+                 path,
+                 c,
+                 size,
+                 simulations,):
+        import self_play
+        self.config = {
+            'leaf_evaluation': leaf_evaluation,
+            'encoder': encoder,
+            'path': path,
+            'c': c,
+            'size': size,
+            'simulations': simulations,
+        }
+
+        self.reset()
+
+    def notify_move(self, move):
+        self.inner.epoch()
+        self.inner.report_move(move)
+
+    def reset(self):
+        import self_play
+        self.inner = self_play.actor(
+            leaf_evaluation=self.config['leaf_evaluation'],
+            encoder=self.config['encoder'],
+            path=self.config['path'],
+            c=self.config['c'],
+            size=self.config['size'],
+            simulations=self.config['simulations'],
+        )
+        self.inner.epoch()
+
+    def policy(self, state):
+        self.inner.epoch()
+        distribution = self.inner.policy_distribution()
+        print(distribution)
+        (action, p) = max(distribution, key=lambda t: t[1])
+        return action
+
+
+class SFFileAgent(Actor):
     """An agent relying on the Rust-implemented MCTS search"""
 
     def __init__(self, model_path, size, leaf_evaluation='rollout', encoder='normalized', simulations=1000, c=3, policy='greedy'):
@@ -64,6 +114,74 @@ class SFAgent(Actor):
     def policy(self, state, callback=None):
         #assert state.size == self.size
         return self.policies([state])[0]
+
+
+class SFAgent(Actor):
+    """An interface to the rust-implemented MCTS"""
+
+    def __init__(self, path, size, simulations=100, c=3.0, leaf_evaluation='rollout', encoder='normalized', name=''):
+        import self_play
+        self.name = name
+        self.size = size
+        self.agent = self_play.agent(
+            leaf_evaluation=leaf_evaluation,
+            encoder=encoder,
+            path=path,
+            c=c,
+            size=size,
+            simulations=simulations,
+        )
+
+    def policy(self, state, callback=None):
+        state = state.grid if isinstance(state, Hex) else state
+        distribution = self.agent.policy_distribution(state)
+        (action, p) = max(distribution, key=lambda x: x[1])
+        return action
+
+    def prediction(self, state):
+        state = state.grid if isinstance(state, Hex) else state
+        return self.agent.prediction(state)
+
+    def policy_distribution(self, state):
+        state = state.grid if isinstance(state, Hex) else state
+        distribution = np.zeros((self.size, self.size))
+
+        for ((x, y), p) in self.agent.policy_distribution(state):
+            distribution[y, x] = p
+
+        return distribution
+
+
+class SFPredictionAgent(Actor):
+    def __init__(self, path, size, simulations=100, c=3.0, leaf_evaluation='rollout', encoder='normalized', policy_kind='proportional', name=''):
+        import self_play
+        self.name = name
+        self.size = size
+        self.policy_kind = policy_kind
+        self.agent = self_play.agent(
+            leaf_evaluation=leaf_evaluation,
+            encoder=encoder,
+            path=path,
+            c=c,
+            size=size,
+            simulations=simulations,
+        )
+
+    def policy(self, state, callback=None):
+        if isinstance(state, Hex):
+            actions = list(state.available_actions())
+        else:
+            actions = [(x, y) for y in range(self.size)
+                       for x in range(self.size) if state[y][x] == 0]
+
+        state = state.grid if isinstance(state, Hex) else state
+        (p, z) = self.agent.prediction(state)
+
+        if self.policy_kind == 'proportional':
+            w = np.array([p[y][x] for (x, y) in actions])
+            return choices(actions, weights=w, k=1)[0]
+        else:
+            return max(actions, key=lambda a: p[a[1]][a[0]])
 
 
 class LeafEvaluator:

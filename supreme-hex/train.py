@@ -28,7 +28,7 @@ def load_samples(path):
     return shape, B, X, P, Z
 
 
-def train(model_path, sample_paths, save_path, size, lr, epochs):
+def train(model_path, sample_paths, save_path, size, lr, epochs, optimizer=None, use_new=False):
     shapes = []
     X = []
     P = []
@@ -49,18 +49,21 @@ def train(model_path, sample_paths, save_path, size, lr, epochs):
     P = tf.stack(P)
     Z = tf.stack(Z)
 
-    policy = actor.BetaHex(
-        size=size,
-        encoder=None,
-        shape=shape,
-        optimizer=tf.keras.optimizers.Adam(),  # SGD(lr=lr)
-    )
-
     loaded = tf.keras.models.load_model(model_path)
-    policy.model.set_weights(loaded.get_weights())
 
-    policy.model.fit(X, y={'policy': P, 'value': Z}, epochs=epochs)
-    policy.model.save(save_path, include_optimizer=False)
+    loaded.compile(
+        optimizer=optimizer if optimizer is not None else tf.keras.optimizers.SGD(
+            lr=lr),
+        metrics={'policy': tf.keras.metrics.CategoricalAccuracy(),
+                 'value': 'mse'},
+        loss_weights={'value': 1.0, 'policy': 1.0},
+        loss={'policy': actor.policy_loss, 'value': 'mse'},
+    )
+    # policy.model.set_weights(loaded.get_weights())
+    loaded.fit(X, y={'policy': P, 'value': Z}, epochs=epochs)
+    loaded.save(save_path, include_optimizer=False)
+    #policy.model.fit(X, y={'policy': P, 'value': Z}, epochs=epochs)
+    #policy.model.save(save_path, include_optimizer=False)
     print(f'saved to {save_path}')
 
 

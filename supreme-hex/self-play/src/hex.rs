@@ -37,7 +37,8 @@ impl HexRepr for () {
     fn finalize(&mut self) {}
 }
 
-const MAX_SIZE: usize = 8;
+const MAX_SIZE: usize = 11;
+const ROW_MASK: u128 = (1 << MAX_SIZE) - 1;
 
 /// Represents the game of hex. Maintains an inner representation (commonly a wrapper around tf::Tensor) that is kept up-to-date with the game state.
 /// Supports up to 8 x 8 boards.
@@ -56,9 +57,9 @@ pub struct Hex<Repr: HexRepr> {
     /// The current player
     pub current: Player,
     /// A bit-board representation of player 1's pieces
-    pub player1: u64,
+    pub player1: u128,
     /// A bit-board representation of player 2's pieces
-    pub player2: u64,
+    pub player2: u128,
     /// This is always kept in sync with the game. Commonly a reference to a mutable wrapper around a tensor that
     /// provides in-place updates, allowing it to be passed cheaply to tensorflow for inference.
     pub inner: Repr,
@@ -165,6 +166,9 @@ where
             }
         }
 
+        // Notify the inner representation
+        self.inner.place(self.current, position);
+
         self.current = self.current.next();
     }
 
@@ -178,6 +182,9 @@ where
             Player::One => self.player1 &= !(1 << self.index(position, Player::One)),
             Player::Two => self.player2 &= !(1 << self.index(position, Player::Two)),
         }
+
+        // Notify the inner representation
+        self.inner.unplace(previous, position);
 
         self.current = previous;
     }
@@ -200,7 +207,6 @@ where
 
     /// The game of Hex has been proven to never end in a draw. Thus, we have a winner iff the game is finished.
     pub fn winner(&self) -> Option<Player> {
-        const LOWER_EIGHT_SET: u64 = 0b1111_1111;
         // Both boards have the same "perspective" as that of player 1, and can be treated equivalently
         for (board, player) in [self.player1, self.player2]
             .iter()
@@ -209,12 +215,12 @@ where
             // We will apply a BFS-type search going row-by-row.
             // We assume that all board representations are aligned on byte boundaries
             let mut reachable = [0; MAX_SIZE + 1];
-            reachable[0] = board & LOWER_EIGHT_SET;
+            reachable[0] = board & ROW_MASK;
             // Note: size^2 is sufficient to ensure total exploration,
             // but it can probably be tightened quite a lot
             for _ in 0..self.size * self.size {
                 for i in 1..self.size {
-                    let row = (board >> MAX_SIZE * i) & LOWER_EIGHT_SET;
+                    let row = (board >> MAX_SIZE * i) & ROW_MASK;
                     // Those that are directly reachable in row `i` form row `i - 1`
                     reachable[i] = row
                         & (reachable[i - 1] >> 1
