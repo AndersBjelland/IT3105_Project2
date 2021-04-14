@@ -56,7 +56,7 @@ class Actor:
 
             self.model.compile(optimizer=opt(lr=self.learning_rate), loss=loss, metrics=['accuracy'])
 
-    def get_action(self, env):
+    def get_action(self, env, stochastic=True):
         feature_maps = env.encoder.get_encoding() #self.encoder.encode(env) # env.encoder.get_encoding()
 
         prob_dist = self.model(feature_maps).numpy().reshape((-1,))
@@ -70,8 +70,9 @@ class Actor:
         if random.random() <= self.epsilon:
             return random.choice(list(prob_dist.keys()))
 
-        
-        
+        if stochastic:
+            return random.choices(population=list(prob_dist.keys()), weights=list(prob_dist.values()), k=1)[0]
+
         return max(prob_dist, key=prob_dist.get)
 
     def get_prior(self, env):

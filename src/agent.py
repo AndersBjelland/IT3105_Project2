@@ -42,15 +42,19 @@ class Agent:
             mcts.set_new_root(action)
         winner = env.get_winner()
 
+        # add last move
+        replay_buffer.append((env.copy(), distribution))
+
         replay_buffer = [entry + (1,) if entry[0].get_current_player() == winner else entry + (0,) for entry in replay_buffer]
         
         env.reset()
         
         return replay_buffer
 
-    def train_agent(self, env: Hex, n_episodes:int, n_simulations: int, start_rollout_prob: float, end_rollout_prob:float, epochs=1, M=1, file_path='', compete=False, compete_rate=10, threshold=0.55, compete_num_games=50, old_replay=None, search_in_comp=True, simulations_in_comp=100):
+    def train_agent(self, env: Hex, n_episodes:int, n_simulations: int, start_rollout_prob: float, end_rollout_prob:float, epochs=1, M=1, file_path='', compete=False, compete_rate=10, threshold=0.55, compete_num_games=50, old_replay=None, search_in_comp=True, simulations_in_comp=100, verbose=False):
 
         replay_buffer = [] if old_replay is None else old_replay
+        episodes = [] # list to include all steps, inlcuding the last one which is not included in the replay_buffer
         epsilon_decay_factor = (self.actor.epsilon - self.actor.end_epsilon)/n_episodes
         save_model_interval = math.floor(n_episodes/(M-1))
         
@@ -77,7 +81,9 @@ class Agent:
                 self.critic.model.save(file_path+'_critic_'+str(i)+'.h5')
 
             # Add new training examples to the replay buffer
-            replay_buffer = self.run_episode(env=env, n_simulations=n_simulations, rollout_prob=rollout_prob) + replay_buffer
+            res = self.run_episode(env=env, n_simulations=n_simulations, rollout_prob=rollout_prob)
+            episodes += res # update episodes
+            replay_buffer = res[:-1] + replay_buffer # don't include last step in replay buffer
             # Only keep the last 50000 steps
             replay_buffer = replay_buffer[:50000]
             # Train network
@@ -121,9 +127,12 @@ class Agent:
             self.actor.model.save(file_path+str(i+1)+'.h5')
             self.critic.model.save(file_path+'_critic_'+str(i+1)+'.h5')
 
+        # save episodes to file
+        with open(file_path + 'episodes.pkl', 'wb') as f:
+            pickle.dump(episodes, f)
 
         # save last replay buffer
-        with open(file_path + 'replay_buffer_6_6.pkl', 'wb') as f:
+        with open(file_path + 'replay_buffer.pkl', 'wb') as f:
             pickle.dump(replay_buffer, f)
 
 
