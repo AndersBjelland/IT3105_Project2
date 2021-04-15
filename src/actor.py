@@ -56,7 +56,7 @@ class Actor:
 
             self.model.compile(optimizer=opt(lr=self.learning_rate), loss=loss, metrics=['accuracy'])
 
-    def get_action(self, env, stochastic=True):
+    def get_action(self, env, stochastic=False):
         feature_maps = env.encoder.get_encoding() #self.encoder.encode(env) # env.encoder.get_encoding()
 
         prob_dist = self.model(feature_maps).numpy().reshape((-1,))
